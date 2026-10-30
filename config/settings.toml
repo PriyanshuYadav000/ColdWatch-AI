@@ -1,0 +1,36 @@
+[project]
+name = "ColdWatch AI"
+environment = "development"
+timezone = "UTC"
+random_seed = 20261022
+
+[generation]
+profile = "starter" # starter | full
+reading_interval_minutes = 5
+start_timestamp = "2026-10-22T00:00:00Z"
+duration_days = 7
+output_format = "parquet" # parquet | csv | both
+batch_size = 50000
+
+[profiles.starter]
+warehouses = 2
+zones = 10
+sensors = 50
+sensor_readings = 10000
+inventory_lots = 500
+
+[profiles.full]
+warehouses = 10
+zones = 100
+sensors = 500
+sensor_readings = 1000000
+inventory_lots = 10000
+
+[rules]
+# Illustrative defaults for the synthetic demonstration only.
+# Actual product limits come from each lot's StorageRequirement.
+occupancy_warning_fraction = 0.90
+door_open_warning_minutes = 10
+sensor_missing_interval_multiplier = 2
+sensor_drift_tolerance = 3.0
+consecutive_breach_readings_to_open_alarm = 1

@@ -1,0 +1,110 @@
+# ColdWatch AI
+
+**Warehouse Environmental Monitoring & Risk Intelligence Platform**
+
+ColdWatch AI is a locally runnable prototype for monitoring warehouse zones, detecting environmental and operational risks, identifying potentially affected inventory lots, and maintaining traceable alarm, inspection, and remediation workflows.
+
+## Project goals
+
+- Model warehouses, zones, sensors, readings, door events, inventory lots, storage requirements, alarms, inspections, and remediation.
+- Generate deterministic synthetic data using a fixed seed and configurable starter/full profiles.
+- Inject labelled edge cases only after generating a valid baseline.
+- Detect temperature, humidity, occupancy, door, sensor-health, and data-integrity risks.
+- Identify inventory exposure using zone and time overlap.
+- Keep ground-truth labels separate from operational input data.
+- Validate keys, relationships, enums, timestamps, lifecycle transitions, and reproducibility.
+
+## Technology
+
+Python 3.12, NumPy, Pandas, PyArrow, DuckDB, Parquet/CSV/JSON, FastAPI, Pydantic, Streamlit, and Pytest.
+
+The primary risk decisions are made by an explainable Python rule engine. SQL is used for relational joins and inventory-impact queries. No external AI model or LLM is required for the core workflow.
+
+## Requirements
+
+- macOS (Apple Silicon supported) or another Python 3.12 environment
+- Python 3.12
+- Git
+
+## Setup on macOS
+
+If Python 3.12 is not installed and you use Homebrew:
+
+```bash
+brew install python@3.12
+```
+
+Clone the repository, then enter the project directory:
+
+```bash
+git clone https://github.com/PriyanshuYadav000/ColdWatch-AI.git
+cd ColdWatch-AI
+```
+
+Create and activate a virtual environment:
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+```
+
+Upgrade pip and install the project with development dependencies:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Verify the environment:
+
+```bash
+python scripts/check_environment.py
+```
+
+Run the test suite:
+
+```bash
+pytest
+```
+
+## Configuration
+
+The generator configuration is in `config/settings.toml` (read with Python's built-in TOML parser).
+
+- `project.random_seed` controls deterministic generation.
+- `generation.profile` selects `starter` or `full`.
+- `profiles.starter` and `profiles.full` define the corresponding record volumes.
+- Risk-rule values are configurable and illustrative; product-specific limits belong in `StorageRequirement` records.
+
+## Repository layout
+
+```text
+app/                 API and dashboard entry points
+config/              Runtime configuration
+schemas/             SQL schema and data dictionary
+src/coldwatch/       Reusable application logic
+  generators/        Synthetic master, business, and event data
+  engine/            Environmental and data-quality decision rules
+  inventory/         Inventory exposure calculations
+  validation/        Data-integrity and reproducibility checks
+  workflows/         Alarm, inspection, and remediation services
+data/
+  generated/         Generated synthetic input data (not committed at scale)
+  ground_truth/      Separate expected labels for evaluation
+docs/                Architecture, assumptions, and AI prompt history
+reports/             Generated validation and evaluation reports
+scripts/             Developer and generation utilities
+tests/               Automated tests
+```
+
+## Data and provenance
+
+The project uses synthetic data created by this repository. No personal, confidential, or proprietary warehouse data is required. Any future external reference dataset must have its source URL, version, retrieval date, licence/terms, attribution, transformations, and discarded fields documented.
+
+## AI-use transparency
+
+All prompts submitted to AI tools during this project must be recorded in `docs/prompt_history.md`. AI-generated suggestions must be reviewed and tested by the candidate. The candidate is responsible for understanding and validating the implementation.
+
+## Current implementation status
+
+This repository is the project scaffold. The schema, data generator, validation pipeline, risk engine, API, and dashboard will be implemented in the planned milestones. Do not treat placeholder files as completed functionality.
