@@ -144,7 +144,6 @@ CREATE TABLE IF NOT EXISTS door_event (
     door_id VARCHAR NOT NULL,
     event_type VARCHAR NOT NULL CHECK (event_type IN ('OPEN', 'CLOSE')),
     event_at TIMESTAMPTZ NOT NULL,
-    source_sensor_id VARCHAR REFERENCES sensor(sensor_id),
     source_system VARCHAR NOT NULL DEFAULT 'SYNTHETIC',
     ingested_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     notes VARCHAR,
