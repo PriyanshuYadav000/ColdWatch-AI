@@ -44,8 +44,8 @@ product_category = "FRESH_PRODUCE"
 quantity_unit = "kg"
 temperature_min_c = 4.0
 temperature_max_c = 10.0
-humidity_min_pct = 80.0
-humidity_max_pct = 95.0
+humidity_min_pct = 55.0
+humidity_max_pct = 75.0
 allowed_zone_types = ["CHILLED"]
 shelf_life_days = 30
 
