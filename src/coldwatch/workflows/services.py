@@ -17,8 +17,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_DATABASE = PROJECT_ROOT / "data" / "coldwatch.duckdb"
 
 ALARM_TRANSITIONS = {
-    "OPEN": {"ACKNOWLEDGED", "INVESTIGATING", "CLOSED"},
-    "ACKNOWLEDGED": {"INVESTIGATING", "CLOSED"},
+    "OPEN": {"ACKNOWLEDGED", "INVESTIGATING"},
+    "ACKNOWLEDGED": {"INVESTIGATING"},
     "INVESTIGATING": {"ACKNOWLEDGED", "RESOLVED"},
     "RESOLVED": {"CLOSED", "INVESTIGATING"},
     "CLOSED": set(),
@@ -559,9 +559,9 @@ def verify_remediation(
     connection = _connect(database_path)
     try:
         connection.execute("BEGIN TRANSACTION")
-        status, previous = _fetch_one(
+        status, previous, completed_at = _fetch_one(
             connection,
-            "SELECT status, verification_status FROM remediation WHERE remediation_id = ?",
+            "SELECT status, verification_status, completed_at FROM remediation WHERE remediation_id = ?",
             [remediation_id],
             f"Remediation {remediation_id}",
         )
@@ -569,6 +569,8 @@ def verify_remediation(
             raise WorkflowError("A remediation must be COMPLETED before verification.")
         if new_status not in VERIFICATION_TRANSITIONS.get(previous, set()):
             raise WorkflowError(f"Verification transition {previous} -> {new_status} is not allowed.")
+        if completed_at is None or verified < _utc(completed_at):
+            raise WorkflowError("verified_at cannot be earlier than remediation completion.")
 
         connection.execute(
             """
