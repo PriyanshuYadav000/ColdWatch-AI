@@ -153,6 +153,7 @@ All prompts submitted to AI tools during this project must be recorded in `docs/
 - Deterministic baseline sensor-reading generator with bounded Parquet batches and DuckDB bulk loading.
 - Deterministic paired baseline door OPEN/CLOSE event generator.
 - Telemetry coverage summaries, canonical content hashes, and Parquet file checksums.
+- Documented cadence, coverage, baseline signal, and door-event assumptions in `docs/data_generation.md`.
 
 ### Verification in progress
 - Local starter-profile telemetry run and validation on the candidate's Mac.
