@@ -302,13 +302,13 @@ def transition_inspection(
         row = _fetch_one(
             connection,
             """
-            SELECT status, started_at, completed_at, inspection_type, product_disposition
+            SELECT status, requested_at, started_at, completed_at, inspection_type, product_disposition
             FROM inspection WHERE inspection_id = ?
             """,
             [inspection_id],
             f"Inspection {inspection_id}",
         )
-        previous, started_at, completed_at, inspection_type, previous_disposition = row
+        previous, requested_at, started_at, completed_at, inspection_type, previous_disposition = row
         if new_status not in INSPECTION_TRANSITIONS.get(previous, set()):
             raise WorkflowError(f"Inspection transition {previous} -> {new_status} is not allowed.")
 
@@ -317,6 +317,8 @@ def transition_inspection(
         new_findings = findings
         new_disposition = disposition or previous_disposition
         if new_status == "IN_PROGRESS":
+            if actor_time < _utc(requested_at):
+                raise WorkflowError("started_at cannot be earlier than requested_at.")
             new_started_at = actor_time
         elif new_status == "COMPLETED":
             if started_at is None:
@@ -327,8 +329,8 @@ def transition_inspection(
                 raise WorkflowError("Completion requires an explicit product_disposition.")
             if actor_time < _utc(started_at):
                 raise WorkflowError("completed_at cannot be earlier than started_at.")
-            if inspection_type == "PRODUCT_QUALITY" and disposition == "NOT_APPLICABLE":
-                raise WorkflowError("PRODUCT_QUALITY inspections require a product disposition.")
+            if inspection_type == "PRODUCT_QUALITY" and disposition not in {"RELEASED", "QUARANTINED", "REJECTED", "RETEST_REQUIRED"}:
+                raise WorkflowError("PRODUCT_QUALITY inspections require a final product disposition.")
             if inspection_type != "PRODUCT_QUALITY" and disposition not in {"NOT_APPLICABLE", "RELEASED", "QUARANTINED", "RETEST_REQUIRED"}:
                 raise WorkflowError("The selected disposition is not valid for this inspection type.")
             new_completed_at = actor_time
@@ -485,10 +487,10 @@ def transition_remediation(
     connection = _connect(database_path)
     try:
         connection.execute("BEGIN TRANSACTION")
-        previous, started_at, completed_at = _fetch_one(
+        previous, created_at, started_at, completed_at = _fetch_one(
             connection,
             """
-            SELECT status, started_at, completed_at
+            SELECT status, created_at, started_at, completed_at
             FROM remediation WHERE remediation_id = ?
             """,
             [remediation_id],
@@ -496,6 +498,8 @@ def transition_remediation(
         )
         if new_status not in REMEDIATION_TRANSITIONS.get(previous, set()):
             raise WorkflowError(f"Remediation transition {previous} -> {new_status} is not allowed.")
+        if new_status == "IN_PROGRESS" and actor_time < _utc(created_at):
+            raise WorkflowError("started_at cannot be earlier than remediation creation.")
         new_started_at = actor_time if new_status == "IN_PROGRESS" else started_at
         new_completed_at = completed_at
         if new_status == "COMPLETED":
