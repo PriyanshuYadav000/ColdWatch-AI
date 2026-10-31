@@ -9,7 +9,6 @@ from typing import Any, Literal
 
 import duckdb
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Request, status
-from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, ConfigDict, Field
 
 from coldwatch.workflows.services import (
@@ -234,6 +233,127 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
                 "alarms_by_severity": severity_counts,
                 "inventory_impacts_by_status": impact_counts,
             }
+        finally:
+            connection.close()
+
+    @router.get("/warehouses", tags=["locations"])
+    def list_warehouses(request: Request) -> dict[str, Any]:
+        connection = _read_connection(request)
+        try:
+            items = _rows(
+                connection,
+                """
+                SELECT w.*,
+                       COUNT(DISTINCT z.zone_id) AS zone_count,
+                       COUNT(DISTINCT s.sensor_id) AS sensor_count
+                FROM warehouse w
+                LEFT JOIN zone z USING (warehouse_id)
+                LEFT JOIN sensor_zone_assignment sza ON sza.zone_id = z.zone_id AND sza.valid_to IS NULL
+                LEFT JOIN sensor s USING (sensor_id)
+                GROUP BY w.warehouse_id, w.site_code, w.name, w.address_line,
+                         w.city, w.region, w.country, w.timezone, w.status,
+                         w.created_at, w.updated_at
+                ORDER BY w.warehouse_id
+                """
+            )
+            return {"items": items, "total": len(items)}
+        finally:
+            connection.close()
+
+    @router.get("/zones", tags=["locations"])
+    def list_zones(
+        request: Request,
+        warehouse_id: str | None = None,
+        zone_status: str | None = Query(default=None, alias="status", max_length=30),
+    ) -> dict[str, Any]:
+        clauses: list[str] = []
+        parameters: list[Any] = []
+        if warehouse_id:
+            clauses.append("z.warehouse_id = ?")
+            parameters.append(warehouse_id)
+        if zone_status:
+            clauses.append("z.status = ?")
+            parameters.append(zone_status.upper())
+        where = " WHERE " + " AND ".join(clauses) if clauses else ""
+        connection = _read_connection(request)
+        try:
+            items = _rows(
+                connection,
+                """
+                SELECT z.*, w.name AS warehouse_name,
+                       COUNT(DISTINCT sza.sensor_id) AS active_sensor_count,
+                       COUNT(DISTINCT lza.lot_id) FILTER (WHERE lza.stored_to IS NULL) AS current_lot_count
+                FROM zone z
+                JOIN warehouse w USING (warehouse_id)
+                LEFT JOIN sensor_zone_assignment sza
+                  ON sza.zone_id = z.zone_id AND sza.valid_to IS NULL
+                LEFT JOIN lot_zone_assignment lza
+                  ON lza.zone_id = z.zone_id AND lza.stored_to IS NULL
+                """ + where + """
+                GROUP BY z.zone_id, z.warehouse_id, z.name, z.zone_type, z.area_sqm,
+                         z.occupancy_warning_limit_pct, z.status, z.created_at,
+                         z.updated_at, w.name
+                ORDER BY z.warehouse_id, z.zone_id
+                """,
+                parameters,
+            )
+            return {"items": items, "total": len(items)}
+        finally:
+            connection.close()
+
+    @router.get("/zones/{zone_id}/readings", tags=["telemetry"])
+    def list_zone_readings(
+        zone_id: str,
+        request: Request,
+        sensor_type: Literal["TEMPERATURE", "HUMIDITY", "OCCUPANCY"] | None = None,
+        from_at: datetime | None = None,
+        to_at: datetime | None = None,
+        limit: int = Query(default=200, ge=1, le=2000),
+    ) -> dict[str, Any]:
+        clauses = ["a.zone_id = ?"]
+        parameters: list[Any] = [zone_id]
+        if sensor_type:
+            clauses.append("s.sensor_type = ?")
+            parameters.append(sensor_type)
+        if from_at is not None:
+            if from_at.tzinfo is None:
+                raise HTTPException(status_code=422, detail="from_at must include a timezone.")
+            clauses.append("r.observed_at >= ?")
+            parameters.append(from_at)
+        if to_at is not None:
+            if to_at.tzinfo is None:
+                raise HTTPException(status_code=422, detail="to_at must include a timezone.")
+            clauses.append("r.observed_at < ?")
+            parameters.append(to_at)
+        where = " AND ".join(clauses)
+        connection = _read_connection(request)
+        try:
+            zone = _one_or_404(
+                connection,
+                "SELECT zone_id, warehouse_id, name, zone_type FROM zone WHERE zone_id = ?",
+                [zone_id],
+                f"Zone {zone_id} not found.",
+            )
+            if from_at is not None and to_at is not None and from_at >= to_at:
+                raise HTTPException(status_code=422, detail="from_at must be earlier than to_at.")
+            items = _rows(
+                connection,
+                """
+                SELECT r.reading_id, r.sensor_id, s.sensor_type, r.observed_at,
+                       r.reading_value, r.unit, r.quality_status, r.ingested_at
+                FROM sensor_reading r
+                JOIN sensor s USING (sensor_id)
+                JOIN sensor_zone_assignment a
+                  ON a.sensor_id = r.sensor_id
+                 AND a.valid_from <= r.observed_at
+                 AND (a.valid_to IS NULL OR a.valid_to > r.observed_at)
+                WHERE """ + where + """
+                ORDER BY r.observed_at DESC, r.sensor_id
+                LIMIT ?
+                """,
+                parameters + [limit],
+            )
+            return {"zone": zone, "items": items, "total": len(items), "limit": limit}
         finally:
             connection.close()
 
