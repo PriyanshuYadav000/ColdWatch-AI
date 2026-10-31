@@ -16,6 +16,27 @@ python scripts/run_risk_engine.py --profile starter --dry-run
 
 This writes `reports/risk_engine_starter.json` and does not persist alarms or impacts.
 
+### Build a clean isolated challenge database
+
+The latest injector keeps the deliberately invalid sensor mapping on a sensor not already used by another injected sensor anomaly. To refresh the challenge dataset without overwriting the existing local database, copy the saved pre-anomaly baseline:
+
+```bash
+cp -n data/coldwatch-pre-anomaly-backup.duckdb data/coldwatch-risk-engine.duckdb
+python scripts/init_db.py --database data/coldwatch-risk-engine.duckdb
+python scripts/inject_anomalies.py \
+  --profile starter \
+  --database data/coldwatch-risk-engine.duckdb \
+  --ground-truth-root data/ground_truth-risk-engine \
+  --report-root reports/risk-engine
+python scripts/validate_dataset.py \
+  --profile starter \
+  --database data/coldwatch-risk-engine.duckdb \
+  --ground-truth-root data/ground_truth-risk-engine \
+  --report-root reports/risk-engine
+```
+
+This preserves the existing `data/coldwatch.duckdb`, ground-truth folder, and default reports. The copied database starts from the pre-injection master-data and telemetry backup, so the existing baseline Parquet files can be reused.
+
 ## Persist detected findings
 
 After reviewing the dry-run report:
