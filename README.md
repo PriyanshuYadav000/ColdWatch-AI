@@ -133,4 +133,25 @@ All prompts submitted to AI tools during this project must be recorded in `docs/
 
 ## Current implementation status
 
-This repository is the project scaffold. The schema, data generator, validation pipeline, risk engine, API, and dashboard will be implemented in the planned milestones. Do not treat placeholder files as completed functionality.
+### Implemented
+- Python 3.12 project environment and configuration loader.
+- DuckDB relational schema for the 10 challenge entities and supporting relationship/history tables.
+- Entity relationship design and field-level data dictionary.
+- DuckDB schema initialization script.
+- Deterministic starter/full master-data generator for warehouses, zones, sensors, storage requirements, inventory lots, and effective-dated assignments.
+- In-memory validation for master-data IDs, parent references, and compatible baseline lot placement.
+
+### Verification in progress
+- Unit and schema constraint tests.
+- Master-data persistence integration test.
+- Starter-profile generation on a fresh local DuckDB database.
+
+### Not yet implemented
+- Sensor reading and door-event generation.
+- Labelled anomaly injection and separate ground-truth export.
+- Full cross-row validation and reproducibility runner.
+- Environmental risk engine and inventory impact resolver.
+- Alarm, inspection, and remediation workflow services.
+- FastAPI endpoints and Streamlit dashboard.
+
+Do not treat items under "Not yet implemented" as completed functionality.
