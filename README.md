@@ -81,6 +81,18 @@ The schema-specific tests can also be run independently:
 pytest -q tests/test_schema.py
 ```
 
+## Generate master and inventory data
+
+The synthetic product catalogue and allowed storage-zone types are configured in `config/products.toml`. Generate the starter master dataset after initializing a fresh DuckDB database:
+
+```bash
+python scripts/generate_master_data.py --profile starter
+```
+
+Use `--profile full` for the challenge-scale master data (10 warehouses, 100 zones, 500 sensors, and 10,000 inventory lots). This step generates the master/business entities and their effective-dated assignments; sensor readings and door events are generated in a later pipeline step.
+
+The command writes a row-count and SHA-256 summary to `reports/master_data_summary.json`. Generation is deterministic for the configured seed. It refuses to insert into already-populated master tables; initialize a fresh database before regenerating.
+
 ## Configuration
 
 The generator configuration is in `config/settings.toml` (read with Python's built-in TOML parser).
@@ -94,7 +106,7 @@ The generator configuration is in `config/settings.toml` (read with Python's bui
 
 ```text
 app/                 API and dashboard entry points
-config/              Runtime configuration
+config/              Runtime and synthetic product catalogue configuration
 schemas/             SQL schema and data dictionary
 src/coldwatch/       Reusable application logic
   generators/        Synthetic master, business, and event data
