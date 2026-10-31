@@ -132,6 +132,13 @@ def test_alarm_lifecycle_requires_impact_completion_and_records_history(tmp_path
 def test_failed_impact_alarm_cannot_be_resolved(tmp_path: Path):
     database_path, _ = _seed_and_run_engine(tmp_path)
 
+    transition_alarm(
+        alarm_id="ALM-ANOM-000001",
+        new_status="INVESTIGATING",
+        changed_by="quality.lead",
+        reason="Impact assessment is being reviewed.",
+        database_path=database_path,
+    )
     with pytest.raises(WorkflowError, match="impact assessment is COMPLETE"):
         transition_alarm(
             alarm_id="ALM-ANOM-000001",
@@ -145,7 +152,7 @@ def test_failed_impact_alarm_cannot_be_resolved(tmp_path: Path):
         alarm_id="ALM-ANOM-000001",
         new_status="ACKNOWLEDGED",
         changed_by="quality.lead",
-        reason="Negative-control alarm acknowledged for investigation.",
+        reason="Return to acknowledged state after failed resolution attempt.",
         database_path=database_path,
     )
     assert result["new_status"] == "ACKNOWLEDGED"
@@ -226,7 +233,7 @@ def test_inspection_and_remediation_lifecycle_with_verification_history(tmp_path
     )
     remediation_id = remediation["remediation_id"]
 
-    with pytest.raises(WorkflowError, match="must be started"):
+    with pytest.raises(WorkflowError, match="not allowed"):
         transition_remediation(
             remediation_id=remediation_id,
             new_status="COMPLETED",
