@@ -9,14 +9,15 @@ Modular monolith with independently testable Python modules. The generator, vali
 1. Load deterministic generation settings and fixed seed.
 2. Create master data: warehouses, zones, sensors, and storage requirements.
 3. Create inventory lots and effective-dated lot-to-zone assignments.
-4. Generate sensor readings and door events in batches.
-5. Inject labelled anomalies into an otherwise valid baseline.
-6. Persist source records and separate ground-truth labels.
-7. Validate primary keys, foreign keys, enums, date ordering, lifecycle transitions, and reconciliation.
-8. Evaluate environmental and data-quality rules.
-9. Resolve affected lots by zone and time overlap.
-10. Persist alarms, inspections, remediations, and transition history.
-11. Expose results through FastAPI and Streamlit; compare decisions with ground truth.
+4. Generate baseline sensor readings in bounded batches at each sensor's configured cadence; write Parquet and bulk-load DuckDB.
+5. Generate paired baseline door OPEN/CLOSE events for each zone; preserve event times and source identifiers.
+6. Inject labelled anomalies into an otherwise valid baseline.
+7. Persist source records and separate ground-truth labels.
+8. Validate primary keys, foreign keys, enums, date ordering, lifecycle transitions, and reconciliation.
+9. Evaluate environmental and data-quality rules.
+10. Resolve affected lots by zone and time overlap.
+11. Persist alarms, inspections, remediations, and transition history.
+12. Expose results through FastAPI and Streamlit; compare decisions with ground truth.
 
 ## Core decision approach
 
