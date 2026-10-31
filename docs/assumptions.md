@@ -3,7 +3,11 @@
 The challenge permits reasonable assumptions where details are unspecified. All values below are synthetic demonstration defaults, not claims about regulatory or industry standards.
 
 - All internal timestamps are stored in UTC.
-- The nominal sensor reading interval is five minutes.
+- The nominal sensor reading interval is five minutes for every sensor.
+- The number of readings is distributed as evenly as possible across sensors. The profile simulation window is derived from the largest per-sensor reading count so baseline readings do not imply a multi-day outage in the smaller starter profile.
+- The starter profile therefore represents a shorter smoke-test period; the full profile represents almost seven days at a five-minute cadence.
+- Baseline temperature and humidity signals use zone-type-specific illustrative values selected to remain within the synthetic product requirements assigned to compatible zones. Deliberate excursions and drift are injected only in the later labelled anomaly stage.
+- Baseline door activity consists of deterministic paired OPEN/CLOSE events. Unmatched door events and excessive open durations are introduced as explicit exceptions in the anomaly stage.
 - Warehouse/zone/sensor and inventory assignments are effective-dated.
 - Temperature and humidity limits are product/lot-specific and stored in `StorageRequirement`.
 - Occupancy telemetry is represented as zone-capacity utilization in percent (0–100%), not a people headcount. Each zone has an occupancy warning threshold; the global warning fraction and door-open warning duration are configurable in `config/settings.toml`.
