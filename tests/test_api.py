@@ -259,6 +259,31 @@ def test_api_drives_alarm_inspection_and_remediation_lifecycle(tmp_path: Path):
         },
     )
     assert resolved.status_code == 200
+    assert resolved.json()["result"]["new_status"] == "RESOLVED"
+
+    closed = client.post(
+        f"/api/v1/alarms/{alarm_id}/transitions",
+        json={
+            "new_status": "CLOSED",
+            "changed_by": "warehouse.manager",
+            "reason": "Quality and warehouse review completed; closure approved.",
+        },
+    )
+    assert closed.status_code == 200
+    assert closed.json()["result"]["new_status"] == "CLOSED"
+
+    alarm_detail = client.get(f"/api/v1/alarms/{alarm_id}")
+    assert alarm_detail.status_code == 200
+    assert alarm_detail.json()["status"] == "CLOSED"
+    assert len(alarm_detail.json()["status_history"]) == 5
+
+    # The deliberately incomplete negative control must remain unchanged.
+    negative_control = client.get("/api/v1/alarms/ALM-ANOM-000001")
+    assert negative_control.status_code == 200
+    assert negative_control.json()["status"] == "OPEN"
+    assert negative_control.json()["impact_assessment_status"] == "FAILED"
+    assert negative_control.json()["inventory_impacts"] == []
+    assert len(negative_control.json()["status_history"]) == 1
 
     connection = duckdb.connect(str(database_path), read_only=True)
     try:
