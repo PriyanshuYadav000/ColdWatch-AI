@@ -147,12 +147,12 @@ The prototype has no authentication/authorization or rate limiting and should re
 
 With FastAPI running in Terminal 1, open a second terminal and run:
 
-\`\`\`bash
+```bash
 source .venv/bin/activate
 streamlit run app/streamlit_app.py
-\`\`\`
+```
 
-Open the local Streamlit URL printed by the command (normally \`http://localhost:8501\`). The dashboard includes KPI overview, alarm filtering and investigation, evidence and impacted-lot review, alarm transitions, inspection creation, warehouse/zone telemetry charts, inspection/remediation management, and independent verification.
+Open the local Streamlit URL printed by the command (normally `http://localhost:8501`). The dashboard includes KPI overview, alarm filtering and investigation, evidence and impacted-lot review, alarm transitions, inspection creation, warehouse/zone telemetry charts, inspection/remediation management, and independent verification.
 
 The dashboard communicates through FastAPI and does not query DuckDB directly. See [docs/dashboard.md](docs/dashboard.md) for architecture and operating instructions.
 
@@ -254,4 +254,4 @@ All prompts submitted to AI tools during this project must be recorded in `docs/
 - Complete full-profile performance and output verification.
 - Add automated fresh-run reproducibility comparison across independent databases.
 
-Do not treat items under "Not yet implemented" as completed functionality.
+Items listed under Remaining work are not yet completed.
