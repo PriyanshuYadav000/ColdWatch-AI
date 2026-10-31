@@ -270,7 +270,13 @@ def build_master_data(
         zones_by_type.setdefault(zone["zone_type"], []).append(zone)
 
     # A baseline lot is assigned only to a zone type allowed by its requirement.
-    duration_seconds = duration_days * 24 * 60 * 60
+    # Keep the profile's simulated period consistent with its reading volume.
+    # Starter is a shorter smoke-test window; full spans nearly seven days at
+    # the configured five-minute cadence. This avoids artificial baseline gaps.
+    max_readings_per_sensor = (int(counts["sensor_readings"]) + sensor_count - 1) // sensor_count
+    cadence_seconds = int(generation["reading_interval_minutes"]) * 60
+    coverage_seconds = max(1, (max_readings_per_sensor - 1) * cadence_seconds)
+    duration_seconds = min(duration_days * 24 * 60 * 60, coverage_seconds)
     for lot_number in range(1, lot_count + 1):
         product = rng.choice(products)
         candidate_zones = [
