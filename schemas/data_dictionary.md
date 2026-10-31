@@ -286,6 +286,22 @@ Same structure as AlarmStatusHistory, with `inspection_id` as the FK and new_sta
 
 Same structure as AlarmStatusHistory, with `remediation_id` as the FK and new_status allowed values: PLANNED, IN_PROGRESS, COMPLETED, CANCELLED.
 
+## 2.10 RemediationVerificationHistory
+
+**Purpose:** Append-only record of independent verification outcomes after a remediation is completed.
+
+| Field | Type | Required? | Key / unique | Allowed values / unit | Validation |
+|---|---|---:|---|---|---|
+| verification_id | VARCHAR | Yes | PK | Unique verification event ID | Immutable; unique |
+| remediation_id | VARCHAR | Yes | FK → remediation | Existing remediation ID | Parent must exist |
+| previous_verification_status | VARCHAR | Yes | — | PENDING, PASSED, FAILED, NOT_REQUIRED | Must match the prior operational state |
+| new_verification_status | VARCHAR | Yes | — | PENDING, PASSED, FAILED, NOT_REQUIRED | Must be a permitted transition |
+| verified_at | TIMESTAMPTZ | Yes | — | UTC instant | At or after remediation completion |
+| verified_by | VARCHAR | Yes | — | Reviewer/actor identifier | Non-empty |
+| reason | VARCHAR | Yes | — | Verification evidence or outcome | Non-empty |
+
+A remediation must be COMPLETED before verification. The current verification state is maintained on the Remediation row; this table preserves each change as an append-only audit event.
+
 ---
 
 # 3. Alarm, Inspection, and Remediation core fields
