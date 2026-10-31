@@ -16,8 +16,9 @@ Modular monolith with independently testable Python modules. The generator, vali
 8. Validate primary keys, foreign keys, enums, date ordering, lifecycle transitions, and reconciliation.
 9. Evaluate environmental and data-quality rules.
 10. Resolve affected lots by zone and time overlap.
-11. Persist alarms, inspections, remediations, and transition history.
-12. Expose results through FastAPI and Streamlit; compare decisions with ground truth.
+11. Persist alarms and evidence; resolve affected inventory lots using zone/time overlap.
+12. Advance alarm, inspection, and remediation workflows with transactional updates and append-only history.
+13. Expose operational views and actions through FastAPI and Streamlit; compare decisions with isolated ground truth through an independent evaluator.
 
 ## Core decision approach
 
