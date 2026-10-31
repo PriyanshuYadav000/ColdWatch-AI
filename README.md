@@ -121,6 +121,22 @@ python scripts/validate_dataset.py --profile starter
 
 The command writes `reports/validation_<profile>.json`. It exits successfully only when artifact checksums, telemetry integrity, audit counts, all nine scenario evidence records, and key inventory/mapping constraints pass. See [docs/validation.md](docs/validation.md) for the detailed checks.
 
+## Risk detection engine
+
+Preview the deterministic operational risk rules without writing alarms:
+
+```bash
+python scripts/run_risk_engine.py --profile starter --dry-run
+```
+
+After reviewing the JSON report, persist traceable alarms, evidence, and zone/time-overlapping inventory impacts:
+
+```bash
+python scripts/run_risk_engine.py --profile starter
+```
+
+The first rule set detects temperature and humidity requirement excursions, occupancy threshold breaches, prolonged door-open events, explicit sensor outages, peer-relative temperature sensor drift, incompatible lot placement, unapproved overlapping sensor mappings, and alarms with incomplete inventory-impact assessments. The engine never reads the separate ground-truth CSV. See [docs/risk_engine.md](docs/risk_engine.md) for thresholds, attribution rules, limitations, and run behavior.
+
 ## Configuration
 
 The generator configuration is in `config/settings.toml` (read with Python's built-in TOML parser).
@@ -175,14 +191,16 @@ All prompts submitted to AI tools during this project must be recorded in `docs/
 - Deterministic injection of nine labelled environmental, operational, sensor-health, inventory-placement, mapping, and alarm-impact scenarios.
 - Separate ground-truth CSV with SHA-256 manifest and auditable reading revision / gap records.
 - Post-injection validator for artifact integrity, telemetry cadence, inventory allocations, mapping overlaps, revision lineage, and scenario evidence.
+- Deterministic risk engine for environmental excursions, occupancy, door, outage, drift, inventory compatibility, mapping integrity, and incomplete alarm-impact detection.
+- Transactional alarm persistence with stable source keys, evidence links, and inventory exposure joins; supports read-only dry run.
 
 ### Verification in progress
 - Execute `scripts/validate_dataset.py --profile starter` against the candidate's local injected database.
 - Full one-million-reading performance and output verification.
+- Local starter-profile risk-engine review and verification.
 
 ### Not yet implemented
 - Automated fresh-run reproducibility comparison across independent databases.
-- Environmental risk engine and inventory impact resolver.
 - Alarm, inspection, and remediation workflow services.
 - FastAPI endpoints and Streamlit dashboard.
 
