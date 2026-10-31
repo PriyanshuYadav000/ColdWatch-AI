@@ -11,6 +11,8 @@ start_timestamp = "2026-10-22T00:00:00Z"
 duration_days = 7
 output_format = "parquet" # parquet | csv | both
 batch_size = 50000
+# Normal door-event simulation rate; excursions are injected in a later stage.
+door_event_pairs_per_zone_per_day = 2
 
 [profiles.starter]
 warehouses = 2
