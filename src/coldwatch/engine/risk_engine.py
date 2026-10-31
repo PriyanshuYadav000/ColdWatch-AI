@@ -642,7 +642,7 @@ def _detect_incomplete_impact_assessments(connection: duckdb.DuckDBPyConnection)
           AND a.impact_assessment_status = 'FAILED'
         GROUP BY a.alarm_id, a.alarm_type, a.severity, a.zone_id, a.sensor_id,
                  a.event_start_at, a.event_end_at, a.title, a.description
-        ORDER BY a.detected_at
+        ORDER BY MIN(a.detected_at)
         """
     ).fetchall()
     detections = []
