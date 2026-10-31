@@ -89,9 +89,19 @@ The synthetic product catalogue and allowed storage-zone types are configured in
 python scripts/generate_master_data.py --profile starter
 ```
 
-Use `--profile full` for the challenge-scale master data (10 warehouses, 100 zones, 500 sensors, and 10,000 inventory lots). This step generates the master/business entities and their effective-dated assignments; sensor readings and door events are generated in a later pipeline step.
+Use `--profile full` for the challenge-scale master data (10 warehouses, 100 zones, 500 sensors, and 10,000 inventory lots). This step generates the master/business entities and their effective-dated assignments.
 
-The command writes a row-count and SHA-256 summary to `reports/master_data_summary.json`. Generation is deterministic for the configured seed. It refuses to insert into already-populated master tables; initialize a fresh database before regenerating.
+Generate normal baseline sensor readings and door events next:
+
+```bash
+python scripts/generate_telemetry.py --profile starter
+```
+
+Use `--profile full` to generate exactly 1,000,000 sensor readings for the full profile. Readings are generated in bounded batches and written to Parquet; door events are generated as paired OPEN/CLOSE records. The default five-minute interval is preserved for each sensor. Starter and full profiles have a simulated time window derived from their reading counts so the baseline cadence is explicit.
+
+Telemetry Parquet files and `telemetry_summary.json` are written under `data/generated/<profile>/telemetry/`. The summary includes row counts, coverage, canonical-content SHA-256 hashes, and Parquet file hashes. The telemetry command requires empty `sensor_reading` and `door_event` tables and refuses accidental duplicate insertion. Use a fresh initialized database for a new run.
+
+Both master-data and telemetry generation are deterministic for the same seed and configuration.
 
 ## Configuration
 
