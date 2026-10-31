@@ -131,6 +131,7 @@ CREATE TABLE IF NOT EXISTS sensor_reading (
     ingested_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     source_sequence BIGINT,
     UNIQUE (sensor_id, observed_at),
+    CHECK (source_sequence IS NULL OR source_sequence >= 0),
     CHECK (
         (unit = 'pct_rh' AND reading_value BETWEEN 0 AND 100) OR
         (unit = 'pct_capacity' AND reading_value BETWEEN 0 AND 100) OR
@@ -201,6 +202,7 @@ CREATE TABLE IF NOT EXISTS sensor_health_event (
     details VARCHAR NOT NULL,
     detected_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CHECK (ended_at IS NULL OR ended_at > started_at),
+    CHECK (expected_interval_seconds IS NULL OR expected_interval_seconds > 0),
     CHECK ((status = 'OPEN' AND ended_at IS NULL) OR (status = 'RESOLVED' AND ended_at IS NOT NULL))
 );
 
@@ -237,7 +239,8 @@ CREATE TABLE IF NOT EXISTS alarm (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CHECK (event_end_at IS NULL OR event_end_at > event_start_at),
-    CHECK (detected_at >= event_start_at)
+    CHECK (detected_at >= event_start_at),
+    CHECK (updated_at >= created_at)
 );
 
 CREATE TABLE IF NOT EXISTS alarm_evidence (
@@ -322,7 +325,9 @@ CREATE TABLE IF NOT EXISTS inspection (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CHECK (due_at IS NULL OR due_at >= requested_at),
     CHECK (started_at IS NULL OR started_at >= requested_at),
-    CHECK (completed_at IS NULL OR (started_at IS NOT NULL AND completed_at >= started_at))
+    CHECK (completed_at IS NULL OR (started_at IS NOT NULL AND completed_at >= started_at)),
+    CHECK (status <> 'IN_PROGRESS' OR started_at IS NOT NULL),
+    CHECK (status <> 'COMPLETED' OR (started_at IS NOT NULL AND completed_at IS NOT NULL AND findings IS NOT NULL))
 );
 
 CREATE TABLE IF NOT EXISTS remediation (
@@ -341,6 +346,8 @@ CREATE TABLE IF NOT EXISTS remediation (
     verified_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CHECK (completed_at IS NULL OR (started_at IS NOT NULL AND completed_at >= started_at)),
+    CHECK (status <> 'IN_PROGRESS' OR started_at IS NOT NULL),
+    CHECK (status <> 'COMPLETED' OR (started_at IS NOT NULL AND completed_at IS NOT NULL)),
     CHECK (verified_at IS NULL OR completed_at IS NOT NULL)
 );
 
