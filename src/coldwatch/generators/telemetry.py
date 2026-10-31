@@ -453,15 +453,25 @@ def _validate_persisted_telemetry(
                 ) AS next_event_type,
                 LEAD(event_at) OVER (
                     PARTITION BY zone_id, door_id ORDER BY event_at
-                ) AS next_event_at
+                ) AS next_event_at,
+                LAG(event_type) OVER (
+                    PARTITION BY zone_id, door_id ORDER BY event_at
+                ) AS previous_event_type
             FROM door_event
         )
         SELECT COUNT(*)
         FROM sequenced
-        WHERE event_type <> 'OPEN'
-           OR next_event_type <> 'CLOSE'
-           OR next_event_at IS NULL
-           OR date_diff('second', event_at, next_event_at) NOT BETWEEN 120 AND 480
+        WHERE (
+            event_type = 'OPEN'
+            AND (
+                next_event_type IS DISTINCT FROM 'CLOSE'
+                OR next_event_at IS NULL
+                OR date_diff('second', event_at, next_event_at) NOT BETWEEN 120 AND 480
+            )
+        ) OR (
+            event_type = 'CLOSE'
+            AND previous_event_type IS DISTINCT FROM 'OPEN'
+        )
         """
     ).fetchone()[0]
     if invalid_units or invalid_readings or invalid_doors or cadence_errors or invalid_door_pairs:
