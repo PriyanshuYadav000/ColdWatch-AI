@@ -858,31 +858,29 @@ def _persist_detections(
                 )
                 evidence_rows += 1
 
-            impacted = connection.execute(
+            # A multi-zone sensor mapping is ambiguous: do not attribute
+            # inventory exposure to either zone automatically.
+            impacted = []
+            if finding["zone_id"] and finding["issue_type"] != "SENSOR_MAPPED_TO_MULTIPLE_ZONES":
+                overlap_end = finding["event_end_at"] or finding["event_start_at"] + timedelta(minutes=5)
+                impact_sql = """
+                    SELECT lza.assignment_id, lza.lot_id,
+                           GREATEST(lza.stored_from, ?) AS exposure_start,
+                           LEAST(COALESCE(lza.stored_to, ?), ?) AS exposure_end
+                    FROM lot_zone_assignment lza
+                    WHERE lza.zone_id = ?
+                      AND lza.stored_from < ?
+                      AND (lza.stored_to IS NULL OR lza.stored_to > ?)
                 """
-                SELECT lza.assignment_id, lza.lot_id,
-                       GREATEST(lza.stored_from, ?) AS exposure_start,
-                       LEAST(
-                           COALESCE(lza.stored_to, ?),
-                           ?
-                       ) AS exposure_end
-                FROM lot_zone_assignment lza
-                WHERE lza.zone_id = ?
-                  AND lza.stored_from < ?
-                  AND (lza.stored_to IS NULL OR lza.stored_to > ?)
-                  AND (? = 0 OR lza.lot_id IN (SELECT UNNEST(?)))
-                ORDER BY lza.lot_id, lza.assignment_id
-                """,
-                [
-                    finding["event_start_at"], finding["event_end_at"] or finding["event_start_at"] + timedelta(minutes=5),
-                    finding["event_end_at"] or finding["event_start_at"] + timedelta(minutes=5),
-                    finding["zone_id"],
-                    finding["event_end_at"] or finding["event_start_at"] + timedelta(minutes=5),
-                    finding["event_start_at"],
-                    len(finding["affected_lot_ids"]),
-                    finding["affected_lot_ids"],
-                ],
-            ).fetchall() if finding["zone_id"] else []
+                parameters = [
+                    finding["event_start_at"], overlap_end, overlap_end,
+                    finding["zone_id"], overlap_end, finding["event_start_at"],
+                ]
+                if finding["affected_lot_ids"]:
+                    impact_sql += " AND lza.lot_id IN (SELECT UNNEST(?))"
+                    parameters.append(finding["affected_lot_ids"])
+                impact_sql += " ORDER BY lza.lot_id, lza.assignment_id"
+                impacted = connection.execute(impact_sql, parameters).fetchall()
 
             for assignment_id, lot_id, exposure_start, exposure_end in impacted:
                 if exposure_end <= exposure_start:
