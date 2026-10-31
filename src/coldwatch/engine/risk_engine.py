@@ -213,12 +213,17 @@ def _detect_environmental(
           ON m.sensor_id = r.sensor_id
          AND m.valid_from <= r.observed_at
          AND (m.valid_to IS NULL OR m.valid_to > r.observed_at)
+        JOIN zone z
+          ON z.zone_id = m.zone_id
         JOIN lot_zone_assignment lza
           ON lza.zone_id = m.zone_id
          AND lza.stored_from <= r.observed_at
          AND (lza.stored_to IS NULL OR lza.stored_to > r.observed_at)
         JOIN inventory_lot lot USING (lot_id)
         JOIN storage_requirement req USING (requirement_id)
+        JOIN requirement_allowed_zone_type allowed
+          ON allowed.requirement_id = req.requirement_id
+         AND allowed.zone_type = z.zone_type
         WHERE s.sensor_type = ?
           AND r.quality_status = 'GOOD'
           AND req.{minimum_column} IS NOT NULL
@@ -502,6 +507,24 @@ def _detect_drift(
             y_mean = sum(residuals) / window_size
             denominator = sum((i - x_mean) ** 2 for i in range(window_size))
             slope = sum((i - x_mean) * (value - y_mean) for i, value in enumerate(residuals)) / denominator
+
+            # A gradual drift should move the candidate sensor consistently
+            # above its peer. The reciprocal peer residual is negative, even
+            # when it rises back toward zero after the other sensor recovers.
+            # Require a positive sustained residual to avoid flagging that peer.
+            if y_mean <= tolerance * 0.25:
+                continue
+
+            # Excursion injection creates a sharp step in readings; it must not
+            # be classified again as gradual sensor drift. A genuine drift in
+            # this project advances in small increments over the full window.
+            largest_step = max(
+                abs(residuals[index + 1] - residuals[index])
+                for index in range(window_size - 1)
+            )
+            if largest_step > tolerance * 0.75:
+                continue
+
             if net_change < tolerance or slope < (tolerance / (window_size - 1)) * 0.8:
                 continue
 
