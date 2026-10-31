@@ -54,6 +54,7 @@ REQUIRED_TABLES = {
     "inspection_status_history",
     "remediation",
     "remediation_status_history",
+    "remediation_verification_history",
 }
 
 
