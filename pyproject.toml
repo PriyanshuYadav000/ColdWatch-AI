@@ -18,6 +18,7 @@ dependencies = [
     "pytz>=2024.1",
     "uvicorn[standard]>=0.30",
     "streamlit>=1.40",
+    "requests>=2.32.3",
 ]
 
 [project.optional-dependencies]
