@@ -175,6 +175,7 @@ def build_master_data(
     warehouses: list[dict[str, Any]] = []
     zones: list[dict[str, Any]] = []
     sensors: list[dict[str, Any]] = []
+    sensor_zone_lookup: dict[str, str] = {}
 
     for warehouse_number in range(1, warehouse_count + 1):
         warehouse_id = f"WH-{warehouse_number:03d}"
@@ -235,6 +236,7 @@ def build_master_data(
                     "status": "ACTIVE",
                     "created_at": generated_at,
                 })
+                sensor_zone_lookup[sensor_id] = zone_id
 
     # One versioned storage requirement per synthetic product.
     requirement_by_product: dict[str, str] = {}
@@ -317,19 +319,11 @@ def build_master_data(
             "created_at": received_at,
         })
 
-    for sensor in sensors:
-        zone_id = sensor["sensor_id"].split("-")
-        # Zone IDs have a stable prefix and warehouse-local suffix. Remove
-        # the sensor type suffix by using the known zone lookup below.
-        matching_zone = next(
-            zone for zone in zones
-            if sensor["sensor_id"].startswith(f"SNS-{zone['zone_id']}-")
-        )
-        assignment_number = len(data["sensor_zone_assignment"]) + 1
+    for assignment_number, sensor in enumerate(sensors, start=1):
         data["sensor_zone_assignment"].append({
             "assignment_id": f"SZA-{assignment_number:08d}",
             "sensor_id": sensor["sensor_id"],
-            "zone_id": matching_zone["zone_id"],
+            "zone_id": sensor_zone_lookup[sensor["sensor_id"]],
             "valid_from": installed_at,
             "valid_to": None,
             "rationale": "INITIAL_INSTALLATION",
@@ -525,4 +519,7 @@ def generate_master_data(
         data, profile=selected_profile, seed=selected_seed, output_path=summary_path
     )
     summary["persisted_counts"] = counts
+    summary_path = Path(summary_path)
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_path.write_text(json.dumps(summary, indent=2) + "\\n", encoding="utf-8")
     return summary
