@@ -346,7 +346,8 @@ def validate_master_data_bundle(data: dict[str, list[dict[str, Any]]]) -> dict[s
     zone_ids = {row["zone_id"] for row in data["zone"]}
     sensor_ids = {row["sensor_id"] for row in data["sensor"]}
     requirement_ids = {row["requirement_id"] for row in data["storage_requirement"]}
-    lot_ids = {row["lot_id"] for row in data["inventory_lot"]}
+    lots_by_id = {row["lot_id"]: row for row in data["inventory_lot"]}
+    lot_ids = set(lots_by_id)
 
     for table, key in (
         ("warehouse", "warehouse_id"), ("zone", "zone_id"), ("sensor", "sensor_id"),
@@ -380,7 +381,7 @@ def validate_master_data_bundle(data: dict[str, list[dict[str, Any]]]) -> dict[s
     }
     zone_type_by_id = {row["zone_id"]: row["zone_type"] for row in data["zone"]}
     for lot_assignment in data["lot_zone_assignment"]:
-        lot = next(item for item in data["inventory_lot"] if item["lot_id"] == lot_assignment["lot_id"])
+        lot = lots_by_id[lot_assignment["lot_id"]]
         allowed = product_allowed_types[lot["requirement_id"]]
         actual_zone_type = zone_type_by_id[lot_assignment["zone_id"]]
         if actual_zone_type not in allowed:
@@ -521,5 +522,5 @@ def generate_master_data(
     summary["persisted_counts"] = counts
     summary_path = Path(summary_path)
     summary_path.parent.mkdir(parents=True, exist_ok=True)
-    summary_path.write_text(json.dumps(summary, indent=2) + "\\n", encoding="utf-8")
+    summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     return summary
