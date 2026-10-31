@@ -123,7 +123,16 @@ The command writes `reports/validation_<profile>.json`. It exits successfully on
 
 ## FastAPI backend
 
-Run the REST API against the isolated challenge database:
+Before launching the API, persist detected alarms (the previous dry run did not write them):
+
+```bash
+python scripts/run_risk_engine.py \
+  --profile starter \
+  --database data/coldwatch-risk-engine.duckdb \
+  --report-root reports/risk-engine
+```
+
+Then install the API/test dependencies and run the server:
 
 ```bash
 python -m pip install -e ".[dev]"
