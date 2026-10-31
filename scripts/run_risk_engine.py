@@ -6,6 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
+from coldwatch.config import load_settings
 from coldwatch.engine.risk_engine import (
     DEFAULT_DATABASE,
     DEFAULT_REPORT_ROOT,
@@ -26,11 +27,12 @@ def main() -> int:
         help="Detect risks and write a report without persisting alarms or evidence.",
     )
     args = parser.parse_args()
+    selected_profile = args.profile or load_settings()["generation"]["profile"]
 
     report = run_risk_engine(
         database_path=args.database,
-        profile=args.profile,
-        report_path=args.report_root / f"risk_engine_{args.profile or 'configured'}.json",
+        profile=selected_profile,
+        report_path=args.report_root / f"risk_engine_{selected_profile}.json",
         persist=not args.dry_run,
     )
     print(json.dumps(report, indent=2))
