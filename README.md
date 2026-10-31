@@ -150,14 +150,16 @@ All prompts submitted to AI tools during this project must be recorded in `docs/
 - DuckDB schema initialization script.
 - Deterministic starter/full master-data generator for warehouses, zones, sensors, storage requirements, inventory lots, and effective-dated assignments.
 - In-memory validation for master-data IDs, parent references, and compatible baseline lot placement.
+- Deterministic baseline sensor-reading generator with bounded Parquet batches and DuckDB bulk loading.
+- Deterministic paired baseline door OPEN/CLOSE event generator.
+- Telemetry coverage summaries, canonical content hashes, and Parquet file checksums.
 
 ### Verification in progress
-- Unit and schema constraint tests.
-- Master-data persistence integration test.
-- Starter-profile generation on a fresh local DuckDB database.
+- Local starter-profile telemetry run and validation on the candidate's Mac.
+- Full one-million-reading performance and output verification.
 
 ### Not yet implemented
-- Sensor reading and door-event generation.
+- Labelled anomaly injection and separate ground-truth export.
 - Labelled anomaly injection and separate ground-truth export.
 - Full cross-row validation and reproducibility runner.
 - Environmental risk engine and inventory impact resolver.
