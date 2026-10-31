@@ -157,6 +157,19 @@ what next ?
 yes fine its ok now lets move to next step ..
 ```
 
+
+### 2026-10-31 — ChatGPT — Prompt 012: Move to post-injection validation
+
+```text
+PY
+Ground-truth scenarios: 9
+Unique scenario IDs: 9
+Baseline Parquet rows: 10000
+Ground-truth checksum valid: True
+All expected issue types: True
+((.venv) ) (base) priyanshuyadav@PRIYANSHUs-MacBook-Air-4 ColdWatch-AI %   lets move to next step
+```
+
 ## Ongoing maintenance
 
 1. Add every subsequent prompt submitted to ChatGPT or another AI tool.
