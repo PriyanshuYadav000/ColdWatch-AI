@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
 
@@ -62,8 +63,8 @@ class InspectionCreateBody(APIModel):
     requested_by: str = Field(min_length=1, max_length=120)
     lot_id: str | None = Field(default=None, max_length=80)
     inspector: str | None = Field(default=None, max_length=120)
-    requested_at: str | None = None
-    due_at: str | None = None
+    requested_at: datetime | None = None
+    due_at: datetime | None = None
 
 
 class InspectionTransitionBody(APIModel):
