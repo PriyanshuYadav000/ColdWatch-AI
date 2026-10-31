@@ -390,5 +390,44 @@ CREATE TABLE IF NOT EXISTS remediation_status_history (
     CHECK (previous_status IS NULL OR previous_status <> new_status)
 );
 
+
+-- Audit trail for controlled synthetic adjustments to an existing sensor reading.
+-- The original and revised values are both retained; the revision table is not
+-- used by the detector as a feature source.
+CREATE TABLE IF NOT EXISTS sensor_reading_revision (
+    revision_id VARCHAR PRIMARY KEY,
+    reading_id VARCHAR NOT NULL REFERENCES sensor_reading(reading_id),
+    previous_value DECIMAL(12, 4) NOT NULL,
+    revised_value DECIMAL(12, 4) NOT NULL,
+    previous_quality_status VARCHAR NOT NULL
+        CHECK (previous_quality_status IN ('GOOD', 'SUSPECT', 'BAD')),
+    revised_quality_status VARCHAR NOT NULL
+        CHECK (revised_quality_status IN ('GOOD', 'SUSPECT', 'BAD')),
+    revised_at TIMESTAMPTZ NOT NULL,
+    revision_note VARCHAR NOT NULL,
+    UNIQUE (reading_id, revised_at),
+    CHECK (previous_value <> revised_value OR previous_quality_status <> revised_quality_status)
+);
+
+-- Explicit tombstones for expected observations that were not received.
+-- There is intentionally no FK to sensor_reading because the observation is absent.
+CREATE TABLE IF NOT EXISTS sensor_reading_gap (
+    gap_id VARCHAR PRIMARY KEY,
+    sensor_id VARCHAR NOT NULL REFERENCES sensor(sensor_id),
+    expected_reading_id VARCHAR NOT NULL UNIQUE,
+    expected_at TIMESTAMPTZ NOT NULL,
+    expected_interval_seconds INTEGER NOT NULL CHECK (expected_interval_seconds > 0),
+    gap_status VARCHAR NOT NULL DEFAULT 'OPEN'
+        CHECK (gap_status IN ('OPEN', 'RECOVERED')),
+    detected_at TIMESTAMPTZ NOT NULL,
+    recovered_at TIMESTAMPTZ,
+    gap_note VARCHAR NOT NULL,
+    UNIQUE (sensor_id, expected_at),
+    CHECK (
+        (gap_status = 'OPEN' AND recovered_at IS NULL) OR
+        (gap_status = 'RECOVERED' AND recovered_at IS NOT NULL AND recovered_at >= expected_at)
+    )
+);
+
 -- Deliberately not created here: ground truth is a separate evaluation artifact,
 -- not an operational input table. See docs/erd.md and docs/data_dictionary.md.
