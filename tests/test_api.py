@@ -66,6 +66,25 @@ def test_api_health_summary_alarm_list_detail_and_impacts(tmp_path: Path):
     assert summary.json()["counts"]["zones"] == 10
     assert summary.json()["counts"]["alarms"] > 0
 
+    warehouses = client.get("/api/v1/warehouses")
+    assert warehouses.status_code == 200
+    assert warehouses.json()["total"] == 2
+    assert warehouses.json()["items"][0]["zone_count"] > 0
+
+    zones = client.get("/api/v1/zones", params={"warehouse_id": "WH-001"})
+    assert zones.status_code == 200
+    assert zones.json()["total"] > 0
+    zone_id = zones.json()["items"][0]["zone_id"]
+
+    readings = client.get(
+        f"/api/v1/zones/{zone_id}/readings",
+        params={"sensor_type": "TEMPERATURE", "limit": 20},
+    )
+    assert readings.status_code == 200
+    assert readings.json()["zone"]["zone_id"] == zone_id
+    assert readings.json()["items"]
+    assert all(item["sensor_type"] == "TEMPERATURE" for item in readings.json()["items"])
+
     alarms = client.get("/api/v1/alarms", params={"status": "OPEN", "severity": "HIGH"})
     assert alarms.status_code == 200
     assert alarms.json()["total"] > 0
