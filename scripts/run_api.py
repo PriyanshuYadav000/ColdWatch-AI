@@ -8,7 +8,9 @@ from pathlib import Path
 
 import uvicorn
 
-from coldwatch.api.app import DEFAULT_API_DATABASE
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_API_DATABASE = PROJECT_ROOT / "data" / "coldwatch-risk-engine.duckdb"
 
 
 def main() -> int:
