@@ -98,7 +98,7 @@ A missing observation is **not** represented as a fabricated SensorReading. Miss
 
 ## 1.5 DoorEvent
 
-**Purpose:** Discrete OPEN or CLOSE event for a door within a zone. Door identity is stable within the zone.
+**Purpose:** Discrete OPEN or CLOSE event for a door within a zone. Door identity is stable within the zone. The event is sourced from a door controller/event source; it is not modelled as an environmental SensorReading.
 
 | Field | Type | Required? | Key / unique | Allowed values / unit | Validation |
 |---|---|---:|---|---|---|
@@ -107,7 +107,6 @@ A missing observation is **not** represented as a fabricated SensorReading. Miss
 | door_id | VARCHAR | Yes | UNIQUE with zone, event_type and event_at | Stable door code | Non-empty |
 | event_type | VARCHAR | Yes | — | OPEN, CLOSE | Must be an allowed value |
 | event_at | TIMESTAMPTZ | Yes | UNIQUE with zone, door, type | UTC instant | Used to pair sequential OPEN/CLOSE events |
-| source_sensor_id | VARCHAR | No | FK → sensor | Existing sensor ID | When present, source sensor must be suitable for door-event evidence |
 | source_system | VARCHAR | Yes | — | Default SYNTHETIC | Non-empty source identifier |
 | ingested_at | TIMESTAMPTZ | Yes | — | UTC instant | Records ingestion time |
 | notes | VARCHAR | No | — | Free text | Optional context |
