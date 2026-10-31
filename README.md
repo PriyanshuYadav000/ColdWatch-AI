@@ -121,6 +121,19 @@ python scripts/validate_dataset.py --profile starter
 
 The command writes `reports/validation_<profile>.json`. It exits successfully only when artifact checksums, telemetry integrity, audit counts, all nine scenario evidence records, and key inventory/mapping constraints pass. See [docs/validation.md](docs/validation.md) for the detailed checks.
 
+## FastAPI backend
+
+Run the REST API against the isolated challenge database:
+
+```bash
+python -m pip install -e ".[dev]"
+python scripts/run_api.py --database data/coldwatch-risk-engine.duckdb
+```
+
+Open `http://127.0.0.1:8000/docs` for interactive OpenAPI documentation. The API exposes warehouse/zone and sensor telemetry reads, alarm/evidence/impact reads, and alarm/inspection/remediation workflow actions. Read routes use a read-only DuckDB connection; mutation routes call the transactional workflow services. See [docs/api.md](docs/api.md) for endpoints, request examples, and limitations.
+
+The prototype has no authentication/authorization or rate limiting and should remain bound to localhost during the challenge.
+
 ## Operational workflows
 
 The Python workflow services manage alarm, inspection, and remediation lifecycles with transactional state changes and append-only status history. An alarm cannot be resolved while its inventory-impact assessment is incomplete. Inspection completion requires findings and an explicit disposition. Remediation must be linked to a completed inspection, and independent verification is stored in its own history table.
@@ -204,15 +217,16 @@ All prompts submitted to AI tools during this project must be recorded in `docs/
 - Deterministic risk engine for environmental excursions, occupancy, door, outage, drift, inventory compatibility, mapping integrity, and incomplete alarm-impact detection.
 - Transactional alarm persistence with stable source keys, evidence links, and inventory exposure joins; supports read-only dry run.
 - Transactional alarm, inspection, and remediation workflow services with append-only status and verification history.
+- FastAPI REST endpoints for warehouse/zone telemetry, alarms, evidence, inventory impact, inspections, and remediations.
 
 ### Verification status
 - Starter-profile dataset validation completed locally: 27 tests passed and 62/62 validation checks passed (2026-10-31).
 - Full one-million-reading performance and output verification remains pending.
 - Local starter-profile risk-engine dry-run and command verification completed by the candidate.
-- Local workflow service test-suite verification pending.
+- Local API and workflow integration-test verification pending.
 
 ### Not yet implemented
 - Automated fresh-run reproducibility comparison across independent databases.
-- FastAPI endpoints and Streamlit dashboard.
+- Streamlit operational dashboard.
 
 Do not treat items under "Not yet implemented" as completed functionality.
