@@ -18,7 +18,8 @@ Modular monolith with independently testable Python modules. The generator, vali
 10. Resolve affected lots by zone and time overlap.
 11. Persist alarms and evidence; resolve affected inventory lots using zone/time overlap.
 12. Advance alarm, inspection, and remediation workflows with transactional updates and append-only history.
-13. Expose operational views and actions through FastAPI and Streamlit; compare decisions with isolated ground truth through an independent evaluator.
+13. Expose operational views and workflow actions through FastAPI; present them through a Streamlit dashboard.
+14. Compare rule-engine decisions with isolated ground truth through an independent evaluator.
 
 ## Core decision approach
 
