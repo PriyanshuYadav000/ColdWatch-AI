@@ -143,6 +143,19 @@ Open `http://127.0.0.1:8000/docs` for interactive OpenAPI documentation. The API
 
 The prototype has no authentication/authorization or rate limiting and should remain bound to localhost during the challenge.
 
+## Streamlit operations dashboard
+
+With FastAPI running in Terminal 1, open a second terminal and run:
+
+\`\`\`bash
+source .venv/bin/activate
+streamlit run app/streamlit_app.py
+\`\`\`
+
+Open the local Streamlit URL printed by the command (normally \`http://localhost:8501\`). The dashboard includes KPI overview, alarm filtering and investigation, evidence and impacted-lot review, alarm transitions, inspection creation, warehouse/zone telemetry charts, inspection/remediation management, and independent verification.
+
+The dashboard communicates through FastAPI and does not query DuckDB directly. See [docs/dashboard.md](docs/dashboard.md) for architecture and operating instructions.
+
 ## Operational workflows
 
 The Python workflow services manage alarm, inspection, and remediation lifecycles with transactional state changes and append-only status history. An alarm cannot be resolved while its inventory-impact assessment is incomplete. Inspection completion requires findings and an explicit disposition. Remediation must be linked to a completed inspection, and independent verification is stored in its own history table.
@@ -229,13 +242,16 @@ All prompts submitted to AI tools during this project must be recorded in `docs/
 - FastAPI REST endpoints for warehouse/zone telemetry, alarms, evidence, inventory impact, inspections, and remediations.
 
 ### Verification status
-- Starter-profile dataset validation completed locally: 27 tests passed and 62/62 validation checks passed (2026-10-31).
+- Starter-profile dataset validation completed locally: 62/62 validation checks passed (2026-10-31).
+- Earlier core test run: 33 tests passed before API test additions; rerun the expanded suite locally.
 - Full one-million-reading performance and output verification remains pending.
 - Local starter-profile risk-engine dry-run and command verification completed by the candidate.
-- Local API and workflow integration-test verification pending.
+- FastAPI startup and interactive docs/OpenAPI returned HTTP 200 in the local smoke check (2026-10-31).
+- Streamlit dashboard and end-to-end API workflow smoke checks remain to be run locally.
 
-### Not yet implemented
-- Automated fresh-run reproducibility comparison across independent databases.
-- Streamlit operational dashboard.
+### Remaining work
+- Run expanded pytest suite and dashboard/API smoke test.
+- Complete full-profile performance and output verification.
+- Add automated fresh-run reproducibility comparison across independent databases.
 
 Do not treat items under "Not yet implemented" as completed functionality.
