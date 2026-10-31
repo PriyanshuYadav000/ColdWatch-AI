@@ -90,14 +90,14 @@ def test_validator_detects_ground_truth_tampering(tmp_path: Path):
     assert "ground-truth checksum" in failed_names
 
 
-def test_validator_detects_invalid_operational_sensor_values(tmp_path: Path):
+def test_validator_detects_invalid_operational_sensor_timestamps(tmp_path: Path):
     database_path, generated_root, truth_root, report_root = _seed_and_inject(tmp_path)
     connection = duckdb.connect(str(database_path))
     try:
         connection.execute(
             """
             UPDATE sensor_reading
-            SET reading_value = 125
+            SET ingested_at = observed_at - INTERVAL '1 minute'
             WHERE reading_id = (
                 SELECT r.reading_id
                 FROM sensor_reading r
