@@ -14,6 +14,17 @@ Install the project and development/test dependencies:
 python -m pip install -e ".[dev]"
 ```
 
+The earlier risk-engine dry run only writes a report. To populate operational alarm, evidence, and inventory-impact tables for the API, persist findings once:
+
+```bash
+python scripts/run_risk_engine.py \
+  --profile starter \
+  --database data/coldwatch-risk-engine.duckdb \
+  --report-root reports/risk-engine
+```
+
+This operation is idempotent: subsequent runs reuse existing alarms instead of duplicating them. It does not repair the intentionally incomplete negative-control alarm.
+
 Launch the API against the isolated risk-engine database:
 
 ```bash
