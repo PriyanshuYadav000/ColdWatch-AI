@@ -608,6 +608,26 @@ def _inject_invalid_sensor_mapping(
         JOIN sensor_zone_assignment a USING (sensor_id)
         JOIN zone z ON z.zone_id = a.zone_id
         WHERE a.valid_to IS NULL
+          -- Keep this mapping scenario independent from other injected sensor events.
+          AND NOT EXISTS (
+              SELECT 1
+              FROM sensor_reading_revision rev
+              JOIN sensor_reading r USING (reading_id)
+              WHERE r.sensor_id = s.sensor_id
+          )
+          AND NOT EXISTS (
+              SELECT 1
+              FROM sensor_health_event health
+              WHERE health.sensor_id = s.sensor_id
+          )
+          AND NOT EXISTS (
+              SELECT 1
+              FROM sensor_zone_assignment other
+              WHERE other.sensor_id = s.sensor_id
+                AND other.zone_id <> a.zone_id
+                AND a.valid_from < COALESCE(other.valid_to, TIMESTAMPTZ '9999-12-31 00:00:00+00')
+                AND other.valid_from < COALESCE(a.valid_to, TIMESTAMPTZ '9999-12-31 00:00:00+00')
+          )
         ORDER BY s.sensor_id
         LIMIT 1
         """
