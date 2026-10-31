@@ -194,7 +194,11 @@ def _find_environment_candidate(
         event_end = readings[-1][1] + timedelta(minutes=5)
         # Effective-dated lot and sensor mappings use an exclusive valid_to /
         # stored_to boundary, so the last source reading must precede it.
-        if stored_to is not None and stored_to <= readings[-1][1]:
+        if event_start < start_at + timedelta(hours=1):
+            continue
+        if readings[-1][1] >= end_at - timedelta(minutes=30):
+            continue
+        if stored_to is not None and stored_to < event_end:
             continue
         if mapping_from > event_start:
             continue
