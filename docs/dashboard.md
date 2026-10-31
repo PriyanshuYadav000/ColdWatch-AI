@@ -2,9 +2,9 @@
 
 ## Architecture
 
-The Streamlit frontend in \`app/streamlit_app.py\` consumes the FastAPI REST API. It does not read DuckDB directly. Alarm, inspection, remediation, and verification changes stay inside the transactional workflow services.
+The Streamlit frontend in `app/streamlit_app.py` consumes the FastAPI REST API. It does not read DuckDB directly. Alarm, inspection, remediation, and verification changes stay inside the transactional workflow services.
 
-\`\`\`text
+```text
 Streamlit dashboard
         | HTTP GET / POST
         v
@@ -14,23 +14,23 @@ FastAPI application
                          |
                          v
                     DuckDB database
-\`\`\`
+```
 
 ## Run
 
 Start the API in one terminal:
 
-\`\`\`bash
+```bash
 python scripts/run_api.py --database data/coldwatch-risk-engine.duckdb
-\`\`\`
+```
 
 Start the dashboard in another terminal:
 
-\`\`\`bash
+```bash
 streamlit run app/streamlit_app.py
-\`\`\`
+```
 
-Open the local URL printed by Streamlit (normally \`http://localhost:8501\`). The default API URL is \`http://127.0.0.1:8000\`.
+Open the local URL printed by Streamlit (normally `http://localhost:8501`). The default API URL is `http://127.0.0.1:8000`.
 
 ## Features
 
