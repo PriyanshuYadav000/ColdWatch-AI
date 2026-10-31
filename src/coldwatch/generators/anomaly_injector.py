@@ -147,46 +147,60 @@ def _find_environment_candidate(
     # requirement_max_column is selected only from the internal allow-list below.
     if requirement_max_column not in {"temperature_max_c", "humidity_max_pct"}:
         raise AnomalyInjectionError("Unsupported storage requirement column.")
+
+    # Find candidate sensor/lot pairs before touching the large telemetry table.
+    # Joining one million readings to every lot in a zone first creates a large
+    # sensor_reading x lot_zone_assignment intermediate result. The baseline has
+    # one mapping per sensor, so this query returns at most one candidate lot per
+    # sensor and then checks only the four (or eight in other callers) readings
+    # needed for the scenario.
     candidates = con.execute(
         f"""
         SELECT s.sensor_id, s.unit, z.zone_id, z.zone_type,
                lza.stored_from, lza.stored_to, req.{requirement_max_column},
-               r.observed_at
+               sza.valid_from, sza.valid_to
         FROM sensor s
         JOIN sensor_zone_assignment sza ON sza.sensor_id = s.sensor_id
         JOIN zone z ON z.zone_id = sza.zone_id
         JOIN lot_zone_assignment lza ON lza.zone_id = z.zone_id
         JOIN inventory_lot lot ON lot.lot_id = lza.lot_id
         JOIN storage_requirement req ON req.requirement_id = lot.requirement_id
-        JOIN sensor_reading r ON r.sensor_id = s.sensor_id
         WHERE s.sensor_type = ?
           AND req.{requirement_max_column} IS NOT NULL
-          AND sza.valid_from <= r.observed_at
-          AND (sza.valid_to IS NULL OR sza.valid_to > r.observed_at)
-          AND lza.stored_from <= r.observed_at
-          AND (lza.stored_to IS NULL OR lza.stored_to > r.observed_at + INTERVAL '15 minutes')
-          AND r.observed_at >= ? + INTERVAL '1 hour'
-          AND r.observed_at < ? - INTERVAL '30 minutes'
-        ORDER BY r.observed_at, s.sensor_id, z.zone_id, lot.lot_id
-        """
-        .replace("{", "{").replace("}", "}"),
-        [sensor_type, start_at, end_at],
+          AND lza.stored_from < ? - INTERVAL '30 minutes'
+          AND (lza.stored_to IS NULL OR lza.stored_to > ? + INTERVAL '1 hour')
+          AND sza.valid_from < ? - INTERVAL '30 minutes'
+          AND (sza.valid_to IS NULL OR sza.valid_to > ? + INTERVAL '1 hour')
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY s.sensor_id
+            ORDER BY lza.stored_from, lza.lot_id, sza.valid_from, z.zone_id
+        ) = 1
+        ORDER BY s.sensor_id, z.zone_id
+        """,
+        [sensor_type, end_at, start_at, end_at, start_at],
     ).fetchall()
 
-    # Deduplicate candidate starts. A sensor may join several lots in the same zone.
-    seen: set[tuple[str, datetime]] = set()
     for row in candidates:
-        sensor_id, unit, zone_id, zone_type, stored_from, stored_to, maximum, candidate_at = row
-        key = (sensor_id, candidate_at)
-        if key in seen:
-            continue
-        seen.add(key)
-        readings = _four_consecutive_readings(con, sensor_id, candidate_at)
+        (
+            sensor_id, unit, zone_id, zone_type, stored_from, stored_to,
+            maximum, mapping_from, mapping_to,
+        ) = row
+        candidate_from = max(start_at + timedelta(hours=1), stored_from)
+        readings = _four_consecutive_readings(con, sensor_id, candidate_from)
         if len(readings) != 4:
             continue
-        interval_end = readings[-1][1] + timedelta(minutes=5)
-        if stored_to is not None and stored_to < interval_end:
+
+        event_start = readings[0][1]
+        event_end = readings[-1][1] + timedelta(minutes=5)
+        # Effective-dated lot and sensor mappings use an exclusive valid_to /
+        # stored_to boundary, so the last source reading must precede it.
+        if stored_to is not None and stored_to <= readings[-1][1]:
             continue
+        if mapping_from > event_start:
+            continue
+        if mapping_to is not None and mapping_to <= readings[-1][1]:
+            continue
+
         return {
             "sensor_id": sensor_id,
             "unit": unit,
@@ -195,7 +209,11 @@ def _find_environment_candidate(
             "permitted_max": float(maximum),
             "readings": readings,
         }
-    raise AnomalyInjectionError(f"No suitable {sensor_type} sensor with four consecutive readings and overlapping inventory was found.")
+
+    raise AnomalyInjectionError(
+        f"No suitable {sensor_type} sensor with four consecutive readings "
+        "and overlapping inventory was found."
+    )
 
 
 def _revise_readings(
