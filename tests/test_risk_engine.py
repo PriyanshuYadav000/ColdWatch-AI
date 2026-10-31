@@ -76,6 +76,30 @@ def test_risk_engine_detects_all_controlled_issue_types_without_ground_truth(tmp
     assert impact_finding["existing_alarm_id"] == "ALM-ANOM-000001"
     assert impact_finding["affected_lot_ids"]
 
+    mapping_finding = next(
+        item for item in findings
+        if item["issue_type"] == "SENSOR_MAPPED_TO_MULTIPLE_ZONES"
+    )
+    # The mapping anomaly must not reuse a sensor that carries another injected
+    # anomaly, otherwise the detector cannot isolate the individual scenarios.
+    connection = duckdb.connect(str(database_path), read_only=True)
+    try:
+        affected_sensor_ids = {
+            row[0]
+            for row in connection.execute(
+                """
+                SELECT DISTINCT r.sensor_id
+                FROM sensor_reading_revision rev
+                JOIN sensor_reading r USING (reading_id)
+                UNION
+                SELECT sensor_id FROM sensor_health_event
+                """
+            ).fetchall()
+        }
+    finally:
+        connection.close()
+    assert mapping_finding["entity_id"] not in affected_sensor_ids
+
 
 def test_risk_engine_persists_traceable_alarms_and_is_idempotent(tmp_path: Path):
     database_path, report_root = _seed_and_inject(tmp_path)
