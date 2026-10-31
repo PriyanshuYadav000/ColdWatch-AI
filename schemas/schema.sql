@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS warehouse (
     status VARCHAR NOT NULL DEFAULT 'ACTIVE'
         CHECK (status IN ('ACTIVE', 'INACTIVE', 'MAINTENANCE')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CHECK (updated_at >= created_at)
 );
 
 CREATE TABLE IF NOT EXISTS zone (
@@ -33,7 +34,8 @@ CREATE TABLE IF NOT EXISTS zone (
         CHECK (status IN ('ACTIVE', 'INACTIVE', 'MAINTENANCE', 'BLOCKED')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (warehouse_id, name)
+    UNIQUE (warehouse_id, name),
+    CHECK (updated_at >= created_at)
 );
 
 CREATE TABLE IF NOT EXISTS sensor (
@@ -53,6 +55,7 @@ CREATE TABLE IF NOT EXISTS sensor (
     status VARCHAR NOT NULL DEFAULT 'ACTIVE'
         CHECK (status IN ('ACTIVE', 'INACTIVE', 'MAINTENANCE', 'RETIRED')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CHECK (calibration_due_at IS NULL OR calibration_due_at > installed_at),
     CHECK (retired_at IS NULL OR retired_at >= installed_at),
     CHECK (
         (sensor_type = 'TEMPERATURE' AND unit = 'degC') OR
@@ -181,7 +184,10 @@ CREATE TABLE IF NOT EXISTS lot_zone_assignment (
     UNIQUE (lot_id, zone_id, stored_from),
     UNIQUE (assignment_id, lot_id),
     CHECK (stored_to IS NULL OR stored_to > stored_from),
-    CHECK ((status = 'ACTIVE' AND stored_to IS NULL) OR status <> 'ACTIVE')
+    CHECK (
+        (status = 'ACTIVE' AND stored_to IS NULL) OR
+        (status IN ('ENDED', 'CANCELLED') AND stored_to IS NOT NULL)
+    )
 );
 
 CREATE TABLE IF NOT EXISTS sensor_health_event (
