@@ -1,0 +1,74 @@
+# Synthetic product catalogue.
+# All values are illustrative demonstration assumptions, not regulatory guidance.
+
+[[products]]
+product_code = "PROD-FROZEN-001"
+product_name = "Frozen Prepared Food"
+product_category = "FROZEN_FOOD"
+quantity_unit = "kg"
+temperature_min_c = -25.0
+temperature_max_c = -18.0
+humidity_min_pct = 30.0
+humidity_max_pct = 70.0
+allowed_zone_types = ["FROZEN"]
+shelf_life_days = 365
+
+[[products]]
+product_code = "PROD-PHARMA-001"
+product_name = "Temperature-Controlled Medicine"
+product_category = "PHARMACEUTICAL"
+quantity_unit = "case"
+temperature_min_c = 2.0
+temperature_max_c = 8.0
+humidity_min_pct = 30.0
+humidity_max_pct = 60.0
+allowed_zone_types = ["COLD", "CONTROLLED"]
+shelf_life_days = 730
+
+[[products]]
+product_code = "PROD-DAIRY-001"
+product_name = "Chilled Dairy Product"
+product_category = "DAIRY"
+quantity_unit = "case"
+temperature_min_c = 2.0
+temperature_max_c = 6.0
+humidity_min_pct = 35.0
+humidity_max_pct = 70.0
+allowed_zone_types = ["CHILLED"]
+shelf_life_days = 45
+
+[[products]]
+product_code = "PROD-PRODUCE-001"
+product_name = "Fresh Produce"
+product_category = "FRESH_PRODUCE"
+quantity_unit = "kg"
+temperature_min_c = 4.0
+temperature_max_c = 10.0
+humidity_min_pct = 80.0
+humidity_max_pct = 95.0
+allowed_zone_types = ["CHILLED"]
+shelf_life_days = 30
+
+[[products]]
+product_code = "PROD-AMBIENT-001"
+product_name = "Ambient Packaged Goods"
+product_category = "AMBIENT_GOODS"
+quantity_unit = "pallet"
+temperature_min_c = 15.0
+temperature_max_c = 30.0
+humidity_min_pct = 30.0
+humidity_max_pct = 70.0
+allowed_zone_types = ["AMBIENT"]
+shelf_life_days = 540
+
+[[products]]
+product_code = "PROD-INDUSTRIAL-001"
+product_name = "Industrial Material"
+product_category = "INDUSTRIAL_MATERIALS"
+quantity_unit = "pallet"
+temperature_min_c = 10.0
+temperature_max_c = 35.0
+humidity_min_pct = 20.0
+humidity_max_pct = 75.0
+allowed_zone_types = ["HOT"]
+shelf_life_days = 1095
