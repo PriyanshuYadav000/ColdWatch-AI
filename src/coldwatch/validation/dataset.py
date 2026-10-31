@@ -50,6 +50,10 @@ REQUIRED_TABLES = {
     "alarm_evidence",
     "alarm_inventory_impact",
     "alarm_status_history",
+    "inspection",
+    "inspection_status_history",
+    "remediation",
+    "remediation_status_history",
 }
 
 
@@ -128,6 +132,7 @@ def validate_dataset(
     settings_path: str | Path = DEFAULT_SETTINGS_PATH,
     generated_root: str | Path = DEFAULT_GENERATED_ROOT,
     ground_truth_root: str | Path = DEFAULT_GROUND_TRUTH_ROOT,
+    report_root: str | Path = DEFAULT_REPORT_ROOT,
     report_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Validate baseline artifacts, injected scenarios, and operational traceability.
@@ -139,16 +144,15 @@ def validate_dataset(
     selected_profile = profile or settings["generation"]["profile"]
     if selected_profile not in settings["profiles"]:
         raise ValueError(f"Unknown dataset profile: {selected_profile}")
+    selected_report_root = Path(report_root)
     if report_path is None:
-        report_path = DEFAULT_REPORT_ROOT / f"validation_{selected_profile}.json"
+        report_path = selected_report_root / f"validation_{selected_profile}.json"
 
     checks: list[dict[str, Any]] = []
     db_path = Path(database_path)
     telemetry_dir = Path(generated_root) / selected_profile / "telemetry"
     truth_path = Path(ground_truth_root) / selected_profile / "ground_truth.csv"
-    manifest_path = DEFAULT_REPORT_ROOT / f"anomaly_manifest_{selected_profile}.json"
-    # When a custom ground-truth root is supplied, the anomaly manifest remains
-    # in the report directory by design; callers can pass a custom report_path.
+    manifest_path = selected_report_root / f"anomaly_manifest_{selected_profile}.json"
     required_paths = {
         "database": db_path,
         "baseline sensor readings Parquet": telemetry_dir / "sensor_readings.parquet",
@@ -279,6 +283,45 @@ def validate_dataset(
         for table, expected in expected_master_counts.items():
             _record(checks, f"master-data row count: {table}", counts[table], expected)
 
+        # Every lot must retain placement history. Check allocation at each
+        # effective-dated boundary so split assignments remain supported.
+        unassigned_lots = int(connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM inventory_lot lot
+            WHERE NOT EXISTS (
+                SELECT 1 FROM lot_zone_assignment lza WHERE lza.lot_id = lot.lot_id
+            )
+            """
+        ).fetchone()[0])
+        _record(checks, "every inventory lot has placement history", unassigned_lots, 0)
+
+        overallocated_lot_segments = int(connection.execute(
+            """
+            WITH boundaries AS (
+                SELECT lot_id, stored_from AS boundary_at FROM lot_zone_assignment
+                UNION
+                SELECT lot_id, stored_to AS boundary_at
+                FROM lot_zone_assignment WHERE stored_to IS NOT NULL
+            ),
+            allocations AS (
+                SELECT b.lot_id, b.boundary_at,
+                       SUM(lza.assigned_quantity) AS assigned_quantity,
+                       MAX(lot.quantity_received) AS quantity_received
+                FROM boundaries b
+                JOIN lot_zone_assignment lza
+                  ON lza.lot_id = b.lot_id
+                 AND lza.stored_from <= b.boundary_at
+                 AND (lza.stored_to IS NULL OR lza.stored_to > b.boundary_at)
+                JOIN inventory_lot lot ON lot.lot_id = b.lot_id
+                GROUP BY b.lot_id, b.boundary_at
+            )
+            SELECT COUNT(*) FROM allocations
+            WHERE assigned_quantity > quantity_received
+            """
+        ).fetchone()[0])
+        _record(checks, "concurrent lot allocation never exceeds received quantity", overallocated_lot_segments, 0)
+
         operational_counts = {
             "sensor_reading_revisions": _count(connection, "sensor_reading_revision"),
             "sensor_reading_gaps": _count(connection, "sensor_reading_gap"),
@@ -304,6 +347,19 @@ def validate_dataset(
                 actual,
                 manifest_counts.get(key),
             )
+
+        health_event_types = {
+            row[0]: int(row[1])
+            for row in connection.execute(
+                "SELECT event_type, COUNT(*) FROM sensor_health_event GROUP BY event_type"
+            ).fetchall()
+        }
+        _record(
+            checks,
+            "sensor health event types match outage and drift scenarios",
+            health_event_types,
+            {"DRIFT": 1, "OUTAGE": 1},
+        )
 
         baseline_readings = int(summary_counts["sensor_readings"])
         baseline_doors = int(summary_counts["door_events"])
