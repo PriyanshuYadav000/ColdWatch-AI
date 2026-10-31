@@ -61,10 +61,24 @@ Verify the environment:
 python scripts/check_environment.py
 ```
 
+Initialize the local DuckDB schema:
+
+```bash
+python scripts/init_db.py
+```
+
+This creates `data/coldwatch.duckdb` and the empty relational tables defined in `schemas/schema.sql`. The database file is local and excluded from Git.
+
 Run the test suite:
 
 ```bash
 pytest
+```
+
+The schema-specific tests can also be run independently:
+
+```bash
+pytest -q tests/test_schema.py
 ```
 
 ## Configuration
