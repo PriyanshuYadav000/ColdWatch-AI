@@ -194,10 +194,10 @@ All prompts submitted to AI tools during this project must be recorded in `docs/
 - Deterministic risk engine for environmental excursions, occupancy, door, outage, drift, inventory compatibility, mapping integrity, and incomplete alarm-impact detection.
 - Transactional alarm persistence with stable source keys, evidence links, and inventory exposure joins; supports read-only dry run.
 
-### Verification in progress
-- Execute `scripts/validate_dataset.py --profile starter` against the candidate's local injected database.
-- Full one-million-reading performance and output verification.
-- Local starter-profile risk-engine review and verification.
+### Verification status
+- Starter-profile dataset validation completed locally: 27 tests passed and 62/62 validation checks passed (2026-10-31).
+- Full one-million-reading performance and output verification remains pending.
+- Local starter-profile risk-engine review and verification remains pending.
 
 ### Not yet implemented
 - Automated fresh-run reproducibility comparison across independent databases.
