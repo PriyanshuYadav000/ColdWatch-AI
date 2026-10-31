@@ -111,12 +111,14 @@ def _unambiguous_sensor_map_cte() -> str:
         WITH unambiguous_sensor_map AS (
             SELECT a.*
             FROM sensor_zone_assignment a
-            WHERE NOT EXISTS (
+            WHERE (a.is_approved OR NULLIF(TRIM(a.rationale), '') IS NOT NULL)
+              AND NOT EXISTS (
                 SELECT 1
                 FROM sensor_zone_assignment b
                 WHERE b.sensor_id = a.sensor_id
                   AND b.assignment_id <> a.assignment_id
                   AND b.zone_id <> a.zone_id
+                  AND (b.is_approved OR NULLIF(TRIM(b.rationale), '') IS NOT NULL)
                   AND a.valid_from < COALESCE(b.valid_to, TIMESTAMPTZ '9999-12-31 00:00:00+00')
                   AND b.valid_from < COALESCE(a.valid_to, TIMESTAMPTZ '9999-12-31 00:00:00+00')
             )
