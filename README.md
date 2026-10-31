@@ -103,6 +103,24 @@ Telemetry Parquet files and `telemetry_summary.json` are written under `data/gen
 
 Both master-data and telemetry generation are deterministic for the same seed and configuration.
 
+## Anomaly injection and validation
+
+After confirming the baseline telemetry, inject the nine labelled synthetic scenarios:
+
+```bash
+python scripts/inject_anomalies.py --profile starter
+```
+
+The injector writes operational audit evidence to DuckDB and a separate evaluation label file to `data/ground_truth/<profile>/ground_truth.csv`. The original baseline Parquet files are not modified. Do not run the injector twice against the same database; use a fresh database generated from the schema and baseline pipeline for a new run.
+
+Validate the completed dataset and audit trails:
+
+```bash
+python scripts/validate_dataset.py --profile starter
+```
+
+The command writes `reports/validation_<profile>.json`. It exits successfully only when artifact checksums, telemetry integrity, audit counts, all nine scenario evidence records, and key inventory/mapping constraints pass. See [docs/validation.md](docs/validation.md) for the detailed checks.
+
 ## Configuration
 
 The generator configuration is in `config/settings.toml` (read with Python's built-in TOML parser).
@@ -154,15 +172,16 @@ All prompts submitted to AI tools during this project must be recorded in `docs/
 - Deterministic paired baseline door OPEN/CLOSE event generator.
 - Telemetry coverage summaries, canonical content hashes, and Parquet file checksums.
 - Documented cadence, coverage, baseline signal, and door-event assumptions in `docs/data_generation.md`.
+- Deterministic injection of nine labelled environmental, operational, sensor-health, inventory-placement, mapping, and alarm-impact scenarios.
+- Separate ground-truth CSV with SHA-256 manifest and auditable reading revision / gap records.
+- Post-injection validator for artifact integrity, telemetry cadence, inventory allocations, mapping overlaps, revision lineage, and scenario evidence.
 
 ### Verification in progress
-- Local starter-profile telemetry run and validation on the candidate's Mac.
+- Execute `scripts/validate_dataset.py --profile starter` against the candidate's local injected database.
 - Full one-million-reading performance and output verification.
 
 ### Not yet implemented
-- Labelled anomaly injection and separate ground-truth export.
-- Labelled anomaly injection and separate ground-truth export.
-- Full cross-row validation and reproducibility runner.
+- Automated fresh-run reproducibility comparison across independent databases.
 - Environmental risk engine and inventory impact resolver.
 - Alarm, inspection, and remediation workflow services.
 - FastAPI endpoints and Streamlit dashboard.
