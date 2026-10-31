@@ -15,6 +15,7 @@ dependencies = [
     "duckdb>=1.2",
     "fastapi>=0.115",
     "pydantic>=2.9",
+    "pytz>=2024.1",
     "uvicorn[standard]>=0.30",
     "streamlit>=1.40",
 ]
