@@ -27,6 +27,7 @@ EXPECTED_TABLES = {
     "alarm_status_history",
     "inspection_status_history",
     "remediation_status_history",
+    "remediation_verification_history",
 }
 
 
