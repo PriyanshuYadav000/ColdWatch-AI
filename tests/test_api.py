@@ -52,8 +52,24 @@ def _build_api_client(tmp_path: Path):
     return client, database_path, risk_report
 
 
+def _first_alarm_with_impacts(database_path: Path) -> str:
+    connection = duckdb.connect(str(database_path), read_only=True)
+    try:
+        return connection.execute(
+            """
+            SELECT alarm_id
+            FROM alarm_inventory_impact
+            GROUP BY alarm_id
+            ORDER BY COUNT(*) DESC, alarm_id
+            LIMIT 1
+            """
+        ).fetchone()[0]
+    finally:
+        connection.close()
+
+
 def test_api_health_summary_alarm_list_detail_and_impacts(tmp_path: Path):
-    client, _database_path, risk_report = _build_api_client(tmp_path)
+    client, database_path, _risk_report = _build_api_client(tmp_path)
 
     health = client.get("/health")
     assert health.status_code == 200
@@ -90,7 +106,7 @@ def test_api_health_summary_alarm_list_detail_and_impacts(tmp_path: Path):
     assert alarms.json()["total"] > 0
     assert alarms.json()["items"]
 
-    alarm_id = risk_report["persistence"]["alarm_ids_created"][0]
+    alarm_id = _first_alarm_with_impacts(database_path)
     detail = client.get(f"/api/v1/alarms/{alarm_id}")
     assert detail.status_code == 200
     assert detail.json()["alarm_id"] == alarm_id
@@ -107,8 +123,8 @@ def test_api_health_summary_alarm_list_detail_and_impacts(tmp_path: Path):
 
 
 def test_api_drives_alarm_inspection_and_remediation_lifecycle(tmp_path: Path):
-    client, database_path, risk_report = _build_api_client(tmp_path)
-    alarm_id = risk_report["persistence"]["alarm_ids_created"][0]
+    client, database_path, _risk_report = _build_api_client(tmp_path)
+    alarm_id = _first_alarm_with_impacts(database_path)
 
     # A direct OPEN -> RESOLVED transition is rejected by the workflow contract.
     invalid = client.post(
