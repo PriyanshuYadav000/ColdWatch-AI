@@ -390,6 +390,19 @@ CREATE TABLE IF NOT EXISTS remediation_status_history (
     CHECK (previous_status IS NULL OR previous_status <> new_status)
 );
 
+CREATE TABLE IF NOT EXISTS remediation_verification_history (
+    verification_id VARCHAR PRIMARY KEY,
+    remediation_id VARCHAR NOT NULL REFERENCES remediation(remediation_id),
+    previous_verification_status VARCHAR NOT NULL
+        CHECK (previous_verification_status IN ('PENDING', 'PASSED', 'FAILED', 'NOT_REQUIRED')),
+    new_verification_status VARCHAR NOT NULL
+        CHECK (new_verification_status IN ('PENDING', 'PASSED', 'FAILED', 'NOT_REQUIRED')),
+    verified_at TIMESTAMPTZ NOT NULL,
+    verified_by VARCHAR NOT NULL,
+    reason VARCHAR NOT NULL,
+    CHECK (previous_verification_status <> new_verification_status)
+);
+
 
 -- Audit trail for controlled synthetic adjustments to an existing sensor reading.
 -- The original and revised values are both retained; the revision table is not
