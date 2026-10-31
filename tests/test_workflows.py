@@ -152,21 +152,18 @@ def test_failed_impact_alarm_cannot_be_resolved(tmp_path: Path):
 
 
 def test_inspection_and_remediation_lifecycle_with_verification_history(tmp_path: Path):
-    database_path, risk_report = _seed_and_run_engine(tmp_path)
-    alarm_id = risk_report["persistence"]["alarm_ids_created"][0]
+    database_path, _risk_report = _seed_and_run_engine(tmp_path)
 
     connection = duckdb.connect(str(database_path), read_only=True)
     try:
-        lot_id = connection.execute(
+        alarm_id, lot_id = connection.execute(
             """
-            SELECT lot_id
+            SELECT alarm_id, lot_id
             FROM alarm_inventory_impact
-            WHERE alarm_id = ?
-            ORDER BY lot_id
+            ORDER BY alarm_id, lot_id
             LIMIT 1
-            """,
-            [alarm_id],
-        ).fetchone()[0]
+            """
+        ).fetchone()
     finally:
         connection.close()
 
