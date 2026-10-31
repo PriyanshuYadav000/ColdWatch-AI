@@ -123,7 +123,7 @@ def _get_master_context(
           ON z.zone_id = a.zone_id
         WHERE s.status = 'ACTIVE'
           AND a.valid_from <= ?
-          AND (a.valid_to IS NULL OR a.valid_to >= ?)
+          AND (a.valid_to IS NULL OR a.valid_to > ?)
         ORDER BY s.sensor_id
         """,
         [start_at, coverage_end],
@@ -501,6 +501,16 @@ def generate_telemetry(
         if len(zones) != int(counts["zones"]):
             raise TelemetryGenerationError(
                 f"Profile expects {counts['zones']} zones, but found {len(zones)}."
+            )
+        mismatched_intervals = [
+            sensor["sensor_id"]
+            for sensor in sensors
+            if sensor["expected_interval_seconds"] != interval_seconds
+        ]
+        if mismatched_intervals:
+            raise TelemetryGenerationError(
+                "Configured reading interval does not match sensor master data; "
+                f"first mismatches: {mismatched_intervals[:5]}."
             )
     finally:
         connection.close()
