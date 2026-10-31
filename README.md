@@ -121,6 +121,16 @@ python scripts/validate_dataset.py --profile starter
 
 The command writes `reports/validation_<profile>.json`. It exits successfully only when artifact checksums, telemetry integrity, audit counts, all nine scenario evidence records, and key inventory/mapping constraints pass. See [docs/validation.md](docs/validation.md) for the detailed checks.
 
+## Operational workflows
+
+The Python workflow services manage alarm, inspection, and remediation lifecycles with transactional state changes and append-only status history. An alarm cannot be resolved while its inventory-impact assessment is incomplete. Inspection completion requires findings and an explicit disposition. Remediation must be linked to a completed inspection, and independent verification is stored in its own history table.
+
+See [docs/workflows.md](docs/workflows.md) for lifecycle transitions and Python service examples. After pulling schema updates, initialize your selected database to create any new history tables without deleting existing data:
+
+```bash
+python scripts/init_db.py --database data/coldwatch-risk-engine.duckdb
+```
+
 ## Risk detection engine
 
 Preview the deterministic operational risk rules without writing alarms:
@@ -193,15 +203,16 @@ All prompts submitted to AI tools during this project must be recorded in `docs/
 - Post-injection validator for artifact integrity, telemetry cadence, inventory allocations, mapping overlaps, revision lineage, and scenario evidence.
 - Deterministic risk engine for environmental excursions, occupancy, door, outage, drift, inventory compatibility, mapping integrity, and incomplete alarm-impact detection.
 - Transactional alarm persistence with stable source keys, evidence links, and inventory exposure joins; supports read-only dry run.
+- Transactional alarm, inspection, and remediation workflow services with append-only status and verification history.
 
 ### Verification status
 - Starter-profile dataset validation completed locally: 27 tests passed and 62/62 validation checks passed (2026-10-31).
 - Full one-million-reading performance and output verification remains pending.
-- Local starter-profile risk-engine review and verification remains pending.
+- Local starter-profile risk-engine dry-run and command verification completed by the candidate.
+- Local workflow service test-suite verification pending.
 
 ### Not yet implemented
 - Automated fresh-run reproducibility comparison across independent databases.
-- Alarm, inspection, and remediation workflow services.
 - FastAPI endpoints and Streamlit dashboard.
 
 Do not treat items under "Not yet implemented" as completed functionality.
