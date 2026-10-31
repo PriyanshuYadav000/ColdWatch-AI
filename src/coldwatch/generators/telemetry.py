@@ -421,11 +421,55 @@ def _validate_persisted_telemetry(
         WHERE event_type NOT IN ('OPEN', 'CLOSE')
         """
     ).fetchone()[0]
-    if invalid_units or invalid_readings or invalid_doors:
+    cadence_errors = connection.execute(
+        """
+        SELECT COUNT(*)
+        FROM (
+            SELECT
+                r.sensor_id,
+                r.observed_at,
+                LAG(r.observed_at) OVER (
+                    PARTITION BY r.sensor_id ORDER BY r.observed_at
+                ) AS previous_observed_at,
+                s.expected_interval_seconds
+            FROM sensor_reading r
+            JOIN sensor s USING (sensor_id)
+        ) sequenced
+        WHERE previous_observed_at IS NOT NULL
+          AND date_diff('second', previous_observed_at, observed_at)
+                <> expected_interval_seconds
+        """
+    ).fetchone()[0]
+    invalid_door_pairs = connection.execute(
+        """
+        WITH sequenced AS (
+            SELECT
+                zone_id,
+                door_id,
+                event_type,
+                event_at,
+                LEAD(event_type) OVER (
+                    PARTITION BY zone_id, door_id ORDER BY event_at
+                ) AS next_event_type,
+                LEAD(event_at) OVER (
+                    PARTITION BY zone_id, door_id ORDER BY event_at
+                ) AS next_event_at
+            FROM door_event
+        )
+        SELECT COUNT(*)
+        FROM sequenced
+        WHERE event_type <> 'OPEN'
+           OR next_event_type <> 'CLOSE'
+           OR next_event_at IS NULL
+           OR date_diff('second', event_at, next_event_at) NOT BETWEEN 120 AND 480
+        """
+    ).fetchone()[0]
+    if invalid_units or invalid_readings or invalid_doors or cadence_errors or invalid_door_pairs:
         raise TelemetryGenerationError(
-            "Telemetry value validation failed: "
+            "Telemetry validation failed: "
             f"unit mismatches={invalid_units}, invalid readings={invalid_readings}, "
-            f"invalid door events={invalid_doors}."
+            f"invalid door events={invalid_doors}, cadence errors={cadence_errors}, "
+            f"invalid door pairs={invalid_door_pairs}."
         )
 
     per_sensor = connection.execute(
