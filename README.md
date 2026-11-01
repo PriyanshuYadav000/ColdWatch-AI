@@ -283,7 +283,7 @@ python scripts/inject_anomalies.py \
   --profile starter \
   --database "$DB_PATH" \
   --ground-truth-root data/ground_truth \
-  --report-root reports/anomalies
+  --report-root reports
 ~~~
 
 This step adds controlled anomaly evidence to the operational database and writes the expected scenario labels separately under **data/ground_truth/starter/**. Do not run this step a second time against the same database. For a clean repeat, initialize a new database path and run the pipeline from the beginning.
@@ -296,10 +296,10 @@ python scripts/validate_dataset.py \
   --database "$DB_PATH" \
   --generated-root data/generated \
   --ground-truth-root data/ground_truth \
-  --report-root reports/validation
+  --report-root reports
 ~~~
 
-The validator writes a JSON report under **reports/validation/** and returns a non-zero exit code if required validation checks fail. Continue only after the report status is PASS.
+The validator writes a JSON report under **reports/** and returns a non-zero exit code if required validation checks fail. Continue only after the report status is PASS.
 
 ### 10. Preview risk findings, then persist alarms
 
