@@ -43,3 +43,7 @@ data/processed/**
 # Generated reports (keep directory placeholder)
 reports/*
 !reports/.gitkeep
+
+# Evaluation ground truth - keep generated labels local
+data/ground_truth/
+data/ground_truth-*/
