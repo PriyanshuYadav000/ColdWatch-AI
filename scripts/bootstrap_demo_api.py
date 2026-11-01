@@ -73,7 +73,7 @@ def main() -> int:
         "--profile", profile,
         "--database", db,
         "--ground-truth-root", ground_truth,
-        "--report-root", str(reports_root / "anomalies"),
+        "--report-root", str(reports_root),
     )
     _run(
         "scripts/validate_dataset.py",
@@ -81,7 +81,7 @@ def main() -> int:
         "--database", db,
         "--generated-root", generated,
         "--ground-truth-root", ground_truth,
-        "--report-root", str(reports_root / "validation"),
+        "--report-root", str(reports_root),
     )
     _run(
         "scripts/run_risk_engine.py",
