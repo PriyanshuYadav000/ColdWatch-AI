@@ -7,6 +7,7 @@ The central design principle is **evidence before action**. A sensor reading or 
 
 The project is designed to be reproducible and reviewable. It uses deterministic synthetic data, a separate ground-truth evaluation dataset, a transparent Python rule engine, a DuckDB relational store, a FastAPI backend, and a Streamlit operations dashboard. No external LLM or hosted AI service is required to run the core application.
 
+LIVE : https://coldwatch-ai-priyanshu.streamlit.app/
 ---
 
 ## Contents
