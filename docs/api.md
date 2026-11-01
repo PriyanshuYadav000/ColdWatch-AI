@@ -45,6 +45,12 @@ python scripts/run_api.py \
 
 The database can also be selected using `COLDWATCH_DB_PATH` when importing `coldwatch.api.app:app` with Uvicorn. The application factory `create_app(database_path)` supports isolated test databases.
 
+## Hosted write protection
+
+When `COLDWATCH_API_WRITE_TOKEN` is set, all mutating requests under `/api/v1/` (POST, PUT, PATCH, DELETE) must include the matching `X-API-Token` request header. Requests without a valid token receive HTTP 401. Read-only GET routes remain available for the synthetic public demo. When the environment variable is unset, local development retains its existing behavior.
+
+This is a shared demo token for workflow mutations, not per-user authentication or role-based authorization. Never use it as a substitute for production access controls.
+
 ## Routes
 
 System:
