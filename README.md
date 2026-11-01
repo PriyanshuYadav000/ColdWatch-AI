@@ -277,26 +277,26 @@ All prompts submitted to AI tools during this project must be recorded in `docs/
 
 ### Verification status
 
-Locally verified by the candidate (2026-10-31 to 2026-11-01):
+Locally verified on 2026-11-01:
+
 - Starter and full-profile dataset validation: 62/62 checks passed.
-- Full-profile generation: 10 warehouses, 100 zones, 500 sensors, 1,000,000 sensor readings and 10,000 inventory lots.
-- Complete test suite before the latest evaluator/export additions: 36 passed, with one Starlette TestClient deprecation warning.
-- API tests after the alarm-closure/negative-control regression change: 3 passed.
+- Full-profile data volume: 10 warehouses, 100 zones, 500 sensors, 1,000,000 sensor readings, 10,000 inventory lots, and 2,800 baseline door events.
+- Full-profile risk preview: exactly 9 findings for 9 controlled scenarios.
+- Independent full-profile evaluation: 9/9 scenarios matched; 0 unmatched findings; precision 1.0000, recall 1.0000, F1 1.0000, and severity agreement 1.0000.
+- Affected-inventory attribution: 104 expected lot associations matched; 0 false positives and 0 false negatives (precision/recall/F1 each 1.0000 on this labelled scenario set).
+- Complete local test suite: 41 passed, with one Starlette TestClient/httpx deprecation warning.
+- Seed CSV/SQL export and restore regression test passed as part of the complete test suite.
 - Full-profile FastAPI health, summary, alarm, inspection and remediation endpoints returned successful responses.
 - One full-profile alarm was manually taken through investigation, inspection, simulated remediation, independent verification and closure.
 - Negative control remained OPEN with FAILED impact assessment, no inventory-impact links and only its original history row.
+- GitHub Actions Python CI passed for the current main commit: [workflow run](https://github.com/PriyanshuYadav000/ColdWatch-AI/actions/runs/41290952096).
 
-Newly added on 2026-11-01 and requiring a fresh local run:
-- Independent precision/recall/F1 evaluator and unit tests.
-- Portable CSV + SQL seed-bundle exporter and its restore test.
-- GitHub Actions CI workflow.
+**Evaluation scope:** These precision/recall/F1 values measure agreement with nine controlled synthetic scenarios and their 104 expected lot associations. They are not estimates of performance on production warehouse data. The labelled set does not define a true-negative population, so accuracy and specificity are not reported.
 
-### Remaining work
-- Pull the latest commits and rerun the complete pytest suite.
-- Run the full-profile evaluator against the updated risk-engine-v2 report and review false positives/false negatives.
-- Run the seed export and restore test on a local DuckDB database.
-- Record a second independent full-profile generation and compare row counts and hashes.
-- Reconcile the complete prompt history against all AI tools used.
-- Perform a final Streamlit dashboard smoke test and capture screenshots/demo material.
+### Remaining follow-up (not required to run the core prototype)
 
-The prototype remains local-only and is not production-secured. See [docs/challenge_compliance.md](docs/challenge_compliance.md) for the requirement-to-evidence matrix and known limitations.
+- Record an independent second full-profile generation in a fresh database and compare row counts and canonical hashes. Starter-profile reproducibility is covered by automated tests; a second full-scale regeneration comparison has not yet been recorded.
+- Reconcile `docs/prompt_history.md` against all AI tools and prompts used, preserving the challenge's required disclosure accurately.
+- Capture a final Streamlit screenshot or short demo recording. The API health endpoint is verified; the final dashboard browser smoke test should be checked before sharing demo material.
+
+The prototype remains a local-only challenge implementation and is not production-secured. See [docs/challenge_compliance.md](docs/challenge_compliance.md) for the requirement-to-evidence matrix and known limitations.
