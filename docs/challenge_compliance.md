@@ -79,11 +79,12 @@ The evaluation is limited to nine controlled synthetic scenarios and their 104 e
 
 ## Known limitations and remaining evidence
 
-- The prototype is local-only and has no authentication, role-based authorization, rate limiting or TLS.
+- The core prototype is locally runnable. The optional hosted preview protects workflow mutation routes with a shared API token when configured; it does not provide per-user authentication, role-based authorization or rate limiting. Read-only routes serve synthetic data publicly.
 - The rule thresholds and all generated warehouse data are synthetic and illustrative, not regulatory limits or real-world operating recommendations.
 - Inspection and remediation are human-triggered workflow records. The challenge prototype does not create an inspection automatically from every finding.
 - The demonstrated relocation and verification are simulated workflow events; no physical inventory operation occurred.
 - A second independent full-profile generation and hash comparison has not yet been recorded. Starter reproducibility is covered by automated tests.
 - The CSV/SQL seed exporter has a passing sample export/restore regression test. A full 10,000-lot master-data bundle export has not been separately recorded as a submission artifact.
 - The full prompt history must still be reconciled against all AI tools and prompts actually used.
+- The optional hosted preview is configured through `render.yaml` and documented in `docs/deployment.md`; verify both the Render health endpoint and Streamlit dashboard after deployment.
 - A final Streamlit browser smoke test and demo screenshot/video should be captured before distributing demo material.
