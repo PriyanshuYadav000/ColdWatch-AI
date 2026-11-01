@@ -61,22 +61,29 @@ Supporting tables implement sensor/zone and lot/zone many-to-many relationships 
 
 ## Local verification record
 
-The candidate reported the following local checks on 2026-11-01:
+Verified locally on 2026-11-01:
 
-- pytest -q tests/test_api.py: 3 passed.
-- pytest -q: 36 passed, one Starlette TestClient deprecation warning.
-- Full-profile dataset validation: 62/62 passed.
-- Full-profile FastAPI health and summary endpoints: HTTP 200.
-- Full-profile operational workflow manually exercised through closure.
-- Negative control remains OPEN, impact assessment FAILED, with no impact links and only its original history row.
+- Full-profile dataset validation: 62/62 checks passed.
+- Full-profile data volume: 10 warehouses, 100 zones, 500 sensors, 1,000,000 readings, 10,000 inventory lots and 2,800 baseline door events.
+- `pytest -q`: 41 passed, one Starlette TestClient/httpx deprecation warning.
+- Seed CSV/SQL export and restore regression test: passed as part of the full suite.
+- Full-profile dry-run risk report: 9 findings across the 9 expected issue types.
+- Independent evaluation: 9/9 scenarios matched, 0 false positives and 0 false negatives; event precision, recall and F1 are each 1.0000.
+- Affected-lot association evaluation: 104 true positives, 0 false positives and 0 false negatives; link precision, recall and F1 are each 1.0000 for this controlled labelled set.
+- Full-profile FastAPI health and summary endpoints returned HTTP 200; alarm, inspection and remediation detail endpoints were manually exercised.
+- One alarm was manually taken through investigation, inspection, simulated remediation, independent verification and closure.
+- Negative control `ALM-ANOM-000001` remained OPEN with FAILED impact assessment, zero inventory-impact links and only its original history row.
+- GitHub Actions Python CI passed for the current main commit: [workflow run](https://github.com/PriyanshuYadav000/ColdWatch-AI/actions/runs/41290952096).
 
-New evaluation, export and CI additions in this branch require a fresh local run after pulling. Do not represent those tests or the first CI run as passing until verified.
+The evaluation is limited to nine controlled synthetic scenarios and their 104 expected lot associations. It does not establish production performance, and true-negative metrics are unavailable because the labelled set does not define a true-negative population.
 
-## Known limitations
+## Known limitations and remaining evidence
 
 - The prototype is local-only and has no authentication, role-based authorization, rate limiting or TLS.
 - The rule thresholds and all generated warehouse data are synthetic and illustrative, not regulatory limits or real-world operating recommendations.
 - Inspection and remediation are human-triggered workflow records. The challenge prototype does not create an inspection automatically from every finding.
 - The demonstrated relocation and verification are simulated workflow events; no physical inventory operation occurred.
-- An independent full-profile reproducibility comparison is still to be documented.
-- Prompt history must be reconciled against all AI tools used before final submission.
+- A second independent full-profile generation and hash comparison has not yet been recorded. Starter reproducibility is covered by automated tests.
+- The CSV/SQL seed exporter has a passing sample export/restore regression test. A full 10,000-lot master-data bundle export has not been separately recorded as a submission artifact.
+- The full prompt history must still be reconciled against all AI tools and prompts actually used.
+- A final Streamlit browser smoke test and demo screenshot/video should be captured before distributing demo material.
