@@ -313,3 +313,34 @@ def test_api_rejects_extra_request_fields_and_unavailable_database(tmp_path: Pat
     unavailable = TestClient(create_app(tmp_path / "missing.duckdb"))
     response = unavailable.get("/health")
     assert response.status_code == 503
+
+
+
+def test_workflow_mutations_require_token_when_configured(tmp_path: Path, monkeypatch):
+    _client, database_path, _risk_report = _build_api_client(tmp_path)
+    monkeypatch.setenv("COLDWATCH_API_WRITE_TOKEN", "test-demo-write-token")
+    protected_client = TestClient(create_app(database_path))
+    alarm_id = _first_alarm_with_impacts(database_path)
+
+    # Read-only routes remain available for the synthetic hosted demo.
+    assert protected_client.get("/health").status_code == 200
+    assert protected_client.get(f"/api/v1/alarms/{alarm_id}").status_code == 200
+
+    payload = {
+        "new_status": "ACKNOWLEDGED",
+        "changed_by": "warehouse.operator",
+        "reason": "Acknowledged after reviewing the demo alarm.",
+    }
+    denied = protected_client.post(
+        f"/api/v1/alarms/{alarm_id}/transitions",
+        json=payload,
+    )
+    assert denied.status_code == 401
+
+    allowed = protected_client.post(
+        f"/api/v1/alarms/{alarm_id}/transitions",
+        json=payload,
+        headers={"X-API-Token": "test-demo-write-token"},
+    )
+    assert allowed.status_code == 200
+    assert allowed.json()["result"]["new_status"] == "ACKNOWLEDGED"
