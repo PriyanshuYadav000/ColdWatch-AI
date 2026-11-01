@@ -146,9 +146,12 @@ def export_seed_bundle(
             csv_name = f"{table}.csv"
             csv_path = target / csv_name
             csv_literal = _sql_string(str(csv_path))
+            # DuckDB's default CSV quote/escape character is the standard
+            # double quote. Leave those defaults explicit only in read_csv;
+            # avoid fragile nested quote literals in COPY's SQL option parser.
             connection.execute(
                 f"COPY (SELECT * FROM {identifier}{order_clause}) "
-                f"TO {csv_literal} (HEADER, DELIMITER ',', QUOTE '"', ESCAPE '"')"
+                f"TO {csv_literal} (HEADER, DELIMITER ',')"
             )
             row_count = int(connection.execute(
                 f"SELECT COUNT(*) FROM {identifier}"
