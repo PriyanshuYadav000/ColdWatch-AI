@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hmac
 import os
 from datetime import datetime
 from pathlib import Path
@@ -10,6 +11,7 @@ from typing import Any, Literal
 import duckdb
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field
+from starlette.responses import JSONResponse
 
 from coldwatch.workflows.services import (
     WorkflowError,
@@ -167,6 +169,26 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
         version="0.1.0",
     )
     application.state.database_path = selected_path
+
+    @application.middleware("http")
+    async def protect_workflow_mutations(request: Request, call_next):
+        expected_token = os.getenv("COLDWATCH_API_WRITE_TOKEN", "").strip()
+        is_mutation = request.method.upper() in {"POST", "PUT", "PATCH", "DELETE"}
+        is_api_route = request.url.path.startswith("/api/v1/")
+        if expected_token and is_mutation and is_api_route:
+            supplied_token = request.headers.get("X-API-Token", "")
+            if not hmac.compare_digest(
+                supplied_token.encode("utf-8"),
+                expected_token.encode("utf-8"),
+            ):
+                return JSONResponse(
+                    status_code=401,
+                    content={
+                        "detail": "A valid X-API-Token header is required for workflow mutations."
+                    },
+                )
+        return await call_next(request)
+
     router = APIRouter(prefix="/api/v1")
 
     @application.get("/health", tags=["system"])
