@@ -17,7 +17,7 @@ The project is designed to be reproducible and reviewable. It uses deterministic
 4. [Technology stack](#technology-stack)
 5. [Run the project locally](#run-the-project-locally)
 6. [Test and validate the project](#test-and-validate-the-project)
-7. [Start the API and dashboard](#start-the-api-and-dashboard)
+7. [Hosted preview deployment (optional)](#hosted-preview-deployment-optional)
 8. [Reviewer walkthrough: how to use it](#reviewer-walkthrough-how-to-use-it)
 9. [Risk scenarios and detection rules](#risk-scenarios-and-detection-rules)
 10. [Operational workflow and state transitions](#operational-workflow-and-state-transitions)
@@ -428,6 +428,20 @@ The report includes:
 - Per-issue-type evaluation details
 
 The labelled synthetic set does not define a true-negative population. For that reason, the evaluator does not claim accuracy or specificity.
+
+---
+
+## Hosted preview deployment (optional)
+
+The dashboard and API run in separate environments when hosted. The Streamlit Community Cloud frontend cannot reach a FastAPI process running at `127.0.0.1` on a developer's laptop.
+
+For an optional public synthetic-data preview, deploy:
+- FastAPI backend as a Render Web Service using the repository's `render.yaml` Blueprint.
+- Streamlit frontend on Streamlit Community Cloud using `app/streamlit_app.py`.
+
+The hosted dashboard reads `COLDWATCH_API_URL` from Streamlit Secrets and sends `COLDWATCH_API_WRITE_TOKEN` for workflow mutation requests. Render generates the shared write token. Read routes serve synthetic data; mutation routes require the token when it is configured.
+
+**Deployment guide:** [docs/deployment.md](docs/deployment.md). This preview uses the starter dataset and an ephemeral filesystem; workflow changes can reset when the free service is recycled. It is not production-hardened and must not be used with real warehouse/customer data.
 
 ---
 
@@ -878,9 +892,9 @@ Read the generated validation JSON report and inspect the failed check names and
 
 This repository is a local challenge prototype and an engineering demonstration. It is not a production-ready warehouse control system.
 
-- The API currently has no authentication, role-based authorization, or rate limiting.
-- The local API defaults to binding on 127.0.0.1. Do not expose it to an untrusted network.
-- TLS termination and production secret management are not implemented.
+- Hosted workflow mutation routes support an optional shared `X-API-Token` check when `COLDWATCH_API_WRITE_TOKEN` is configured. This is not per-user authentication or role-based authorization; read-only routes remain public for the synthetic demo.
+- The local API defaults to binding on 127.0.0.1. Do not expose the local development server to an untrusted network.
+- Rate limiting and production identity/access management are not implemented. Render provides HTTPS for its public service URL; this prototype does not implement its own TLS termination.
 - DuckDB is used as a local embedded database; production multi-user deployment would require an appropriately designed database and concurrency model.
 - All generated warehouse, sensor, inventory, and anomaly data is synthetic.
 - Thresholds and baseline signal values are illustrative. They are not regulatory guidance or universal product storage limits.
@@ -936,6 +950,7 @@ See **docs/challenge_compliance.md** for the requirement-to-evidence matrix and 
 | [Dashboard](docs/dashboard.md) | Dashboard layout and API integration |
 | [Workflows](docs/workflows.md) | Alarm, inspection, remediation, and verification lifecycles |
 | [Assumptions](docs/assumptions.md) | Domain and simulation assumptions |
+| [Deployment](docs/deployment.md) | Optional Render API and Streamlit Community Cloud setup |
 
 ---
 
