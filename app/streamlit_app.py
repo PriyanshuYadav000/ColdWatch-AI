@@ -1299,8 +1299,11 @@ def main() -> None:
         st.error("The dashboard cannot reach the ColdWatch API.")
         st.error(str(exc))
         st.info(
-            "Start the backend in another terminal with: "
-            "python scripts/run_api.py --database data/coldwatch-risk-engine.duckdb"
+            "Local run: start FastAPI in another terminal with "
+            "`python scripts/run_api.py --database data/coldwatch-risk-engine.duckdb`. "
+            "Streamlit Community Cloud: deploy the FastAPI backend separately, then set "
+            "`COLDWATCH_API_URL` in App settings → Secrets to the backend's public HTTPS URL. "
+            "See docs/deployment.md for the complete two-service setup."
         )
         st.stop()
 
