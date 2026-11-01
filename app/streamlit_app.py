@@ -16,6 +16,7 @@ Interactive features
 from __future__ import annotations
 
 from datetime import datetime
+import os
 from typing import Any
 
 import altair as alt
@@ -88,11 +89,30 @@ class APIError(RuntimeError):
     """Raised when the dashboard cannot complete an API request."""
 
 
+def _configured_value(name: str, default: str = "") -> str:
+    """Read a deployment value from Streamlit Secrets, then the process environment."""
+    value: Any = None
+    try:
+        value = st.secrets.get(name)
+    except Exception:
+        value = None
+    if value in (None, ""):
+        value = os.getenv(name, default)
+    return str(value if value not in (None, "") else default).strip()
+
+
 # --------------------------------------------------------------------------- #
 # API layer
 # --------------------------------------------------------------------------- #
 def _request(method: str, base_url: str, endpoint: str, **kwargs: Any) -> Any:
     url = f"{base_url.rstrip('/')}{endpoint}"
+    headers = dict(kwargs.pop("headers", {}) or {})
+    if method.upper() in {"POST", "PUT", "PATCH", "DELETE"}:
+        token = _configured_value("COLDWATCH_API_WRITE_TOKEN")
+        if token:
+            headers.setdefault("X-API-Token", token)
+    if headers:
+        kwargs["headers"] = headers
     try:
         response = requests.request(method, url, timeout=TIMEOUT, **kwargs)
     except requests.RequestException as exc:
@@ -1243,7 +1263,10 @@ def main() -> None:
         st.caption("Warehouse environmental monitoring")
         base_url = st.text_input(
             "FastAPI base URL",
-            value=st.session_state.get("coldwatch_api_url", DEFAULT_API_URL),
+            value=st.session_state.get(
+                "coldwatch_api_url",
+                _configured_value("COLDWATCH_API_URL", DEFAULT_API_URL),
+            ),
         ).strip().rstrip("/")
         st.session_state["coldwatch_api_url"] = base_url
         st.text_input(
@@ -1257,8 +1280,7 @@ def main() -> None:
             st.rerun()
         st.divider()
         alarm_slot = st.empty()
-        st.caption("Prototype mode · Local API · DuckDB")
-        st.caption("Keep both services local.")
+        st.caption("FastAPI backend · DuckDB")
 
     if not base_url:
         st.error("Enter a valid FastAPI base URL in the sidebar.")
