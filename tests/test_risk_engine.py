@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import csv
+import json
 from pathlib import Path
 
 import duckdb
@@ -151,3 +153,44 @@ def test_risk_engine_persists_traceable_alarms_and_is_idempotent(tmp_path: Path)
         persist=True,
     )
     assert second["persistence"]["alarms_created"] == 0
+
+
+def test_zone_event_findings_link_all_overlapping_inventory_lots(tmp_path: Path):
+    database_path, _report_root = _seed_and_inject(tmp_path)
+    connection = duckdb.connect(str(database_path), read_only=True)
+    try:
+        findings = detect_risks(connection, rules=load_settings()["rules"])
+    finally:
+        connection.close()
+
+    ground_truth_path = tmp_path / "ground_truth" / "starter" / "ground_truth.csv"
+    with ground_truth_path.open(newline="", encoding="utf-8") as file:
+        scenarios = list(csv.DictReader(file))
+
+    findings_by_identity = {
+        (finding["issue_type"], finding["entity_id"]): finding
+        for finding in findings
+    }
+    for scenario in scenarios:
+        identity = (scenario["issue_type"], scenario["entity_id"])
+        assert identity in findings_by_identity, f"Missing finding for {identity}"
+        expected_lots = set(json.loads(scenario["expected_affected_lot_ids"]))
+        detected_lots = set(findings_by_identity[identity]["affected_lot_ids"])
+        assert detected_lots == expected_lots, (
+            f"Inventory links differ for {identity}: "
+            f"expected {sorted(expected_lots)}, detected {sorted(detected_lots)}"
+        )
+
+    # The intentionally incomplete negative-control alarm is detected but its
+    # missing AlarmInventoryImpact links are never repaired by the detector.
+    negative_control = findings_by_identity[
+        ("ALARM_NOT_LINKED_TO_AFFECTED_LOTS", "ALM-ANOM-000001")
+    ]
+    assert negative_control["affected_lot_ids"]
+    connection = duckdb.connect(str(database_path), read_only=True)
+    try:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM alarm_inventory_impact WHERE alarm_id = 'ALM-ANOM-000001'"
+        ).fetchone()[0] == 0
+    finally:
+        connection.close()
