@@ -26,14 +26,14 @@ The Blueprint configures:
 |---|---|
 | Runtime | Python 3.12.11 |
 | Plan | Free preview |
-| Build command | Install project dependencies and create the synthetic starter database |
+| Build command | Install the project in editable mode and create the synthetic starter database |
 | Start command | Start FastAPI on `0.0.0.0:$PORT` |
 | Health check | `/health` |
 | Database | `.runtime/coldwatch-api.duckdb` |
 | Dataset | Deterministic `starter` profile |
 | Workflow writes | Protected by a generated shared API token |
 
-The bootstrap script runs the same starter pipeline as a local reviewer: initialize schema, generate master data, generate baseline telemetry, inject scenarios, validate the dataset, and persist risk-engine findings. It runs during the Render build so the API can bind its port immediately at runtime.
+The project is installed with `pip install -e .` rather than as a regular wheel. The generators resolve configuration and runtime folders (`config/`, `data/`, and `reports/`) relative to the checked-out source tree, so editable installation keeps those paths anchored to the repository on Render.\n\nThe bootstrap script runs the same starter pipeline as a local reviewer: initialize schema, generate master data, generate baseline telemetry, inject scenarios, validate the dataset, and persist risk-engine findings. It runs during the Render build so the API can bind its port immediately at runtime.
 
 Render generates `COLDWATCH_API_WRITE_TOKEN` for the service. Open the service's **Environment** page and copy the generated value. Do not put it in GitHub or in a source file.
 
