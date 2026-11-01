@@ -121,6 +121,40 @@ python scripts/validate_dataset.py --profile starter
 
 The command writes `reports/validation_<profile>.json`. It exits successfully only when artifact checksums, telemetry integrity, audit counts, all nine scenario evidence records, and key inventory/mapping constraints pass. See [docs/validation.md](docs/validation.md) for the detailed checks.
 
+### Independent risk evaluation
+
+After running the risk engine in dry-run mode, compare its findings with the separate evaluation labels:
+
+```bash
+python scripts/run_risk_engine.py \
+  --profile starter \
+  --dry-run \
+  --database data/coldwatch-risk-engine.duckdb \
+  --report-root reports/risk-engine-preview
+
+python scripts/evaluate_risk_engine.py \
+  --profile starter \
+  --risk-report reports/risk-engine-preview/risk_engine_starter.json \
+  --ground-truth data/ground_truth/starter/ground_truth.csv \
+  --output reports/risk-engine-preview/evaluation_starter.json
+```
+
+The evaluator performs one-to-one matching by issue type, entity, zone when available, and event-time overlap. It reports precision, recall, F1, per-issue-type counts, severity agreement, affected-lot link metrics, false positives and false negatives. Ground truth is read only after operational findings have been produced; the risk engine itself never reads it. Accuracy and specificity are not reported because the labelled scenarios do not define a true-negative population.
+
+### Portable CSV and SQL seed export
+
+Export master/reference tables to CSV with a replayable SQL loader and SHA-256 JSON manifest:
+
+```bash
+python scripts/export_seed_bundle.py \
+  --database data/coldwatch-full.duckdb \
+  --output-dir exports/coldwatch-master
+```
+
+The default export includes the warehouse, zone, sensor, storage-requirement, inventory-lot and assignment master tables. Use `--all` to include telemetry, alarms, evidence, impacts and workflow history; a full-profile export includes one million reading rows and can produce large CSV files.
+
+The bundle contains `schema.sql`, per-table CSV files, `seed_data.sql` and `manifest.json`. To restore, create an empty DuckDB database, execute `schema.sql`, change the working directory to the bundle directory, then execute `seed_data.sql` against that database. Ground-truth labels are deliberately excluded from operational seed exports.
+
 ## FastAPI backend
 
 Before launching the API, persist detected alarms (the previous dry run did not write them):
@@ -160,7 +194,7 @@ The dashboard communicates through FastAPI and does not query DuckDB directly. S
 
 The Python workflow services manage alarm, inspection, and remediation lifecycles with transactional state changes and append-only status history. An alarm cannot be resolved while its inventory-impact assessment is incomplete. Inspection completion requires findings and an explicit disposition. Remediation must be linked to a completed inspection, and independent verification is stored in its own history table.
 
-See [docs/workflows.md](docs/workflows.md) for lifecycle transitions and Python service examples. After pulling schema updates, initialize your selected database to create any new history tables without deleting existing data:
+See [docs/workflows.md](docs/workflows.md) for lifecycle transitions and Python service examples. The field-level reference is in [docs/data_dictionary.md](docs/data_dictionary.md), and the requirement-by-requirement acceptance mapping is in [docs/challenge_compliance.md](docs/challenge_compliance.md). After pulling schema updates, initialize your selected database to create any new history tables without deleting existing data:
 
 ```bash
 python scripts/init_db.py --database data/coldwatch-risk-engine.duckdb
@@ -242,16 +276,27 @@ All prompts submitted to AI tools during this project must be recorded in `docs/
 - FastAPI REST endpoints for warehouse/zone telemetry, alarms, evidence, inventory impact, inspections, and remediations.
 
 ### Verification status
-- Starter-profile dataset validation completed locally: 62/62 validation checks passed (2026-10-31).
-- Earlier core test run: 33 tests passed before API test additions; rerun the expanded suite locally.
-- Full one-million-reading performance and output verification remains pending.
-- Local starter-profile risk-engine dry-run and command verification completed by the candidate.
-- FastAPI startup and interactive docs/OpenAPI returned HTTP 200 in the local smoke check (2026-10-31).
-- Streamlit dashboard and end-to-end API workflow smoke checks remain to be run locally.
+
+Locally verified by the candidate (2026-10-31 to 2026-11-01):
+- Starter and full-profile dataset validation: 62/62 checks passed.
+- Full-profile generation: 10 warehouses, 100 zones, 500 sensors, 1,000,000 sensor readings and 10,000 inventory lots.
+- Complete test suite before the latest evaluator/export additions: 36 passed, with one Starlette TestClient deprecation warning.
+- API tests after the alarm-closure/negative-control regression change: 3 passed.
+- Full-profile FastAPI health, summary, alarm, inspection and remediation endpoints returned successful responses.
+- One full-profile alarm was manually taken through investigation, inspection, simulated remediation, independent verification and closure.
+- Negative control remained OPEN with FAILED impact assessment, no inventory-impact links and only its original history row.
+
+Newly added on 2026-11-01 and requiring a fresh local run:
+- Independent precision/recall/F1 evaluator and unit tests.
+- Portable CSV + SQL seed-bundle exporter and its restore test.
+- GitHub Actions CI workflow.
 
 ### Remaining work
-- Run expanded pytest suite and dashboard/API smoke test.
-- Complete full-profile performance and output verification.
-- Add automated fresh-run reproducibility comparison across independent databases.
+- Pull the latest commits and rerun the complete pytest suite.
+- Run the full-profile evaluator against the updated risk-engine-v2 report and review false positives/false negatives.
+- Run the seed export and restore test on a local DuckDB database.
+- Record a second independent full-profile generation and compare row counts and hashes.
+- Reconcile the complete prompt history against all AI tools used.
+- Perform a final Streamlit dashboard smoke test and capture screenshots/demo material.
 
-Items listed under Remaining work are not yet completed.
+The prototype remains local-only and is not production-secured. See [docs/challenge_compliance.md](docs/challenge_compliance.md) for the requirement-to-evidence matrix and known limitations.
