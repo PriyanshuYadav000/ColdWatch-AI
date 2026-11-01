@@ -25,7 +25,9 @@ import requests
 import streamlit as st
 
 DEFAULT_API_URL = "http://127.0.0.1:8000"
-TIMEOUT = 10
+# Render Free may take 50+ seconds to wake after inactivity. Keep the
+# connection timeout short, but allow the server time to start responding.
+TIMEOUT = (10, 90)  # (connect timeout seconds, read timeout seconds)
 
 ALARM_FLOW = ["OPEN", "ACKNOWLEDGED", "INVESTIGATING", "RESOLVED", "CLOSED"]
 INSPECTION_FLOW = ["PENDING", "IN_PROGRESS", "COMPLETED"]
