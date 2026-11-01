@@ -59,6 +59,35 @@ def _stable_id(prefix: str, value: str) -> str:
     return prefix + hashlib.sha256(value.encode("utf-8")).hexdigest()[:20].upper()
 
 
+def _lots_overlapping_zone_interval(
+    connection: duckdb.DuckDBPyConnection,
+    zone_id: str,
+    start_at: datetime,
+    end_at: datetime | None,
+) -> list[str]:
+    """Resolve inventory lots whose effective-dated zone assignment overlaps an event.
+
+    Intervals use [start, end) semantics. An event without an explicit end is
+    treated as a five-minute observation window, matching the telemetry cadence.
+    """
+    window_end = _utc(end_at) if end_at is not None else _utc(start_at) + timedelta(minutes=5)
+    window_start = _utc(start_at)
+    if window_end <= window_start:
+        raise RiskEngineError("Inventory-impact interval must end after it starts.")
+    rows = connection.execute(
+        """
+        SELECT DISTINCT lot_id
+        FROM lot_zone_assignment
+        WHERE zone_id = ?
+          AND stored_from < ?
+          AND (stored_to IS NULL OR stored_to > ?)
+        ORDER BY lot_id
+        """,
+        [zone_id, window_end, window_start],
+    ).fetchall()
+    return [row[0] for row in rows]
+
+
 def _detection(
     *,
     issue_type: str,
@@ -312,6 +341,9 @@ def _detect_occupancy(
                 f"{warning_fraction:.0%} of the configured zone warning threshold."
             ),
             evidence=run["evidence"],
+            affected_lot_ids=_lots_overlapping_zone_interval(
+                connection, run["zone_id"], run["start_at"], run["end_at"]
+            ),
         )
         for run in runs
     ]
@@ -371,6 +403,9 @@ def _detect_door_events(
                 {"evidence_type": "DOOR_EVENT", "source_id": open_id, "observed_at": start_at},
                 {"evidence_type": "DOOR_EVENT", "source_id": close_id, "observed_at": end_at},
             ],
+            affected_lot_ids=_lots_overlapping_zone_interval(
+                connection, zone_id, start_at, end_at
+            ),
         ))
     return detections
 
@@ -454,6 +489,9 @@ def _outage_detection(
         title="Sensor telemetry outage detected",
         description=f"{len(gaps)} consecutive expected telemetry intervals are missing.",
         evidence=evidence,
+        affected_lot_ids=_lots_overlapping_zone_interval(
+            connection, zone_id, start_at, end_at
+        ),
     )
 
 
