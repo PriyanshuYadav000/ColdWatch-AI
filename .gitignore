@@ -29,6 +29,9 @@ htmlcov/
 .idea/
 .vscode/
 
+# Runtime artifacts used by the optional hosted-demo bootstrap
+.runtime/
+
 # Generated data and local databases (keep directory placeholders)
 data/generated/**
 !data/generated/**/.gitkeep
