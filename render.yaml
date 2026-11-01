@@ -3,16 +3,16 @@ services:
     name: coldwatch-api
     runtime: python
     plan: free
-    buildCommand: python -m pip install --upgrade pip && python -m pip install .
+    buildCommand: python -m pip install --upgrade pip && python -m pip install . && python scripts/bootstrap_demo_api.py
     startCommand: python scripts/bootstrap_demo_api.py && python scripts/run_api.py --database "$COLDWATCH_DB_PATH" --host 0.0.0.0 --port "$PORT"
     healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.11
       - key: COLDWATCH_DB_PATH
-        value: /tmp/coldwatch-demo/coldwatch-api.duckdb
+        value: .runtime/coldwatch-api.duckdb
       - key: COLDWATCH_RUNTIME_DIR
-        value: /tmp/coldwatch-demo
+        value: .runtime
       - key: COLDWATCH_DEMO_PROFILE
         value: starter
       - key: COLDWATCH_API_WRITE_TOKEN
