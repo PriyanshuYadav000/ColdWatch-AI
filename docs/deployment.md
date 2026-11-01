@@ -94,7 +94,7 @@ If GET routes work but workflow actions return HTTP 401, check that `COLDWATCH_A
 
 ## 4. Free-hosting behavior and limitations
 
-- Render Free Web Services spin down after inactivity and can take time to wake on the next request.
+- Render Free Web Services spin down after inactivity and can take time to wake on the next request. The Streamlit client allows a 90-second response timeout for hosted API calls so the first request has time to complete after a cold start.
 - The free service uses an ephemeral filesystem. The synthetic starter database is included in the build output; workflow changes made at runtime can be lost when the instance is recycled or redeployed.
 - The demo uses synthetic starter data, not the one-million-reading full challenge dataset.
 - GET endpoints expose synthetic demo data publicly. Workflow mutation endpoints require the shared `X-API-Token`.
