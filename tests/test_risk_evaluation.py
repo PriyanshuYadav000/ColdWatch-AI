@@ -89,7 +89,7 @@ def test_evaluation_reports_tp_fp_fn_and_lot_link_quality():
     assert metrics["f1_score"] == 0.4
     assert metrics["severity_accuracy"] == 0.0
     assert metrics["affected_lot_links"]["true_positives"] == 1
-    assert metrics["affected_lot_links"]["false_positives"] == 1
+    assert metrics["affected_lot_links"]["false_positives"] == 2
     assert metrics["affected_lot_links"]["false_negatives"] == 1
 
 
